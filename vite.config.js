@@ -56,10 +56,10 @@ export default defineConfig(async () => {
     dirs: ["src/components"],
     resolvers: ArcoResolver
       ? [
-          ArcoResolver({
-            importStyle: false,
-          }),
-        ]
+        ArcoResolver({
+          importStyle: false,
+        }),
+      ]
       : [],
   });
 
@@ -82,6 +82,7 @@ export default defineConfig(async () => {
   ].filter(Boolean);
 
   return {
+    base: '/xyzw_web_helper/',
     plugins,
     resolve: {
       alias: {
