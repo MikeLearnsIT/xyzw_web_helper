@@ -82,7 +82,6 @@ export default defineConfig(async () => {
   ].filter(Boolean);
 
   return {
-    base: '/xyzw_web_helper/',
     plugins,
     resolve: {
       alias: {

@@ -120,7 +120,7 @@ const my_routes = [
 ]
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHistory(),
   routes: my_routes,
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) {
