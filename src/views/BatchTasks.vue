@@ -103,7 +103,7 @@
           </div>
         </n-popover>
         <n-button type="primary" @click="startBatch" :disabled="isRunning || selectedTokens.length === 0">
-          {{ isRunning ? '执行中...' : '开始执行' }}
+          {{ isRunning ? '执行中...' : '每日任务' }}
         </n-button>
         <n-button @click="stopBatch" :disabled="!isRunning" type="error" style="margin-left: 12px">
           停止
