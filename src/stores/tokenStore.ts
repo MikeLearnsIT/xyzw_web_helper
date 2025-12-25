@@ -198,6 +198,26 @@ export const useTokenStore = defineStore('tokens', () => {
     return false
   }
 
+  const refreshToken = async (tokenId: string) => {
+    const gameToken = gameTokens.value.find(t => t.id === tokenId)
+    if (gameToken) {
+      try {
+        const userToken: ArrayBuffer | null = await getArrayBuffer(gameToken.name)
+        if (userToken) {
+          const token = await transformToken(userToken)
+          if (token && token !== gameToken.token) {
+             updateToken(tokenId, { ...gameToken, token })
+             wsLogger.info(`Token 已从 IndexedDB 刷新 [${tokenId}]`)
+             return true
+          }
+        }
+      } catch (e) {
+        wsLogger.error(`刷新 Token 失败 [${tokenId}]:`, e)
+      }
+    }
+    return false
+  }
+
   const removeToken = (tokenId: string) => {
     gameTokens.value = gameTokens.value.filter(token => token.id !== tokenId)
 
@@ -1166,6 +1186,7 @@ export const useTokenStore = defineStore('tokens', () => {
     // Token管理方法
     addToken,
     updateToken,
+    refreshToken,
     removeToken,
     selectToken,
 
