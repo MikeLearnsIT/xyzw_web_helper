@@ -2,8 +2,106 @@
   <div class="batch-daily-tasks">
     <!-- Header -->
     <div class="page-header">
-      <h2>批量日常任务</h2>
+      <h2>批量任务</h2>
       <div class="actions">
+        <n-popover trigger="click" placement="bottom-end" style="max-height: 500px; overflow-y: auto;">
+          <template #trigger>
+            <n-button secondary type="info" style="margin-right: 12px">
+              <template #icon>
+                <n-icon>
+                  <TimeOutline />
+                </n-icon>
+              </template>
+              定时任务 ({{schedules.filter(s => s.enabled).length}})
+            </n-button>
+          </template>
+          <div style="padding: 16px; width: 420px">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <span style="font-weight: bold; font-size: 16px;">定时任务列表</span>
+              <n-button size="small" type="primary" @click="addSchedule">
+                <template #icon>
+                  <n-icon>
+                    <AddOutline />
+                  </n-icon>
+                </template>
+                添加任务
+              </n-button>
+            </div>
+
+            <n-empty v-if="schedules.length === 0" description="暂无定时任务" />
+
+            <div v-else style="display: flex; flex-direction: column; gap: 12px;">
+              <div v-for="(schedule, index) in schedules" :key="schedule.id"
+                style="border: 1px solid #e0e0e0; padding: 12px; border-radius: 8px; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <n-switch v-model:value="schedule.enabled" size="small">
+                      <template #checked>开启</template>
+                      <template #unchecked>关闭</template>
+                    </n-switch>
+                    <span :style="{ color: schedule.enabled ? '#18a058' : '#999', fontWeight: 'bold' }">
+                      {{ schedule.enabled ? '运行中' : '已暂停' }}
+                    </span>
+                  </div>
+                  <n-button size="tiny" type="error" quaternary @click="removeSchedule(index)">
+                    <template #icon>
+                      <n-icon>
+                        <TrashOutline />
+                      </n-icon>
+                    </template>
+                  </n-button>
+                </div>
+
+                <n-grid :cols="2" :x-gap="12" :y-gap="12">
+                  <n-grid-item>
+                    <n-time-picker v-model:formatted-value="schedule.time" value-format="HH:mm" format="HH:mm"
+                      placeholder="时间" />
+                  </n-grid-item>
+                  <n-grid-item>
+                    <n-select v-model:value="schedule.taskType" :options="scheduleTaskOptions" placeholder="任务" />
+                  </n-grid-item>
+                  <n-grid-item span="2">
+                    <n-popover trigger="click" placement="bottom" style="width: 350px">
+                      <template #trigger>
+                        <n-button block dashed :type="schedule.runOnAll ? 'primary' : 'default'" ghost>
+                          {{ schedule.runOnAll ? '所有账号' : `已选 ${schedule.selectedTokens.length} 个账号` }}
+                        </n-button>
+                      </template>
+                      <div style="max-height: 300px; overflow-y: auto; padding: 8px;">
+                        <div
+                          style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                          <span style="font-weight: bold;">执行所有账号</span>
+                          <n-switch v-model:value="schedule.runOnAll" size="small" />
+                        </div>
+                        <n-collapse-transition :show="!schedule.runOnAll">
+                          <n-space vertical>
+                            <n-checkbox :checked="isScheduleAllSelected(schedule)"
+                              :indeterminate="isScheduleIndeterminate(schedule)"
+                              @update:checked="(v) => handleScheduleSelectAll(schedule, v)">
+                              全选
+                            </n-checkbox>
+                            <n-checkbox-group v-model:value="schedule.selectedTokens">
+                              <n-grid :cols="2" :x-gap="8" :y-gap="8">
+                                <n-grid-item v-for="token in tokens" :key="token.id">
+                                  <n-checkbox :value="token.id" :label="token.name" />
+                                </n-grid-item>
+                              </n-grid>
+                            </n-checkbox-group>
+                          </n-space>
+                        </n-collapse-transition>
+                      </div>
+                    </n-popover>
+                  </n-grid-item>
+                </n-grid>
+              </div>
+            </div>
+
+            <div
+              style="font-size: 12px; color: #666; margin-top: 16px; text-align: center; padding-top: 8px; border-top: 1px solid #eee;">
+              注意：必须保持网页开启，浏览器不能关闭。
+            </div>
+          </div>
+        </n-popover>
         <n-button type="primary" @click="startBatch" :disabled="isRunning || selectedTokens.length === 0">
           {{ isRunning ? '执行中...' : '开始执行' }}
         </n-button>
@@ -126,12 +224,12 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick, reactive } from 'vue'
+import { ref, computed, nextTick, reactive, onMounted, onUnmounted, watch } from 'vue'
 import { useTokenStore } from '@/stores/tokenStore'
 import { DailyTaskRunner } from '@/utils/dailyTaskRunner'
 import { preloadQuestions } from '@/utils/studyQuestionsFromJSON.js'
 import { useMessage } from 'naive-ui'
-import { Settings } from '@vicons/ionicons5'
+import { Settings, TimeOutline, TrashOutline, AddOutline } from '@vicons/ionicons5'
 
 const tokenStore = useTokenStore()
 const message = useMessage()
@@ -148,6 +246,138 @@ const tokenStatus = ref({}) // { tokenId: 'waiting' | 'running' | 'completed' | 
 const isRunning = ref(false)
 const shouldStop = ref(false)
 
+// --- 定时任务逻辑 ---
+const schedules = ref([])
+const scheduleTaskOptions = [
+  { label: '批量日常', value: 'daily' },
+  { label: '领取挂机', value: 'hangup' },
+  { label: '一键加钟', value: 'add_hangup' },
+  { label: '重置罐子', value: 'bottle' },
+  { label: '一键爬塔', value: 'tower' },
+  { label: '一键答题', value: 'study' },
+  { label: '智能发车', value: 'car_send' },
+  { label: '一键收车', value: 'car_claim' }
+]
+let scheduleTimer = null
+const lastCheckedTime = ref('')
+
+const addSchedule = () => {
+  schedules.value.push({
+    id: Date.now(),
+    enabled: true,
+    time: '08:00',
+    taskType: 'daily',
+    runOnAll: true,
+    selectedTokens: []
+  })
+}
+
+const removeSchedule = (index) => {
+  schedules.value.splice(index, 1)
+}
+
+const isScheduleAllSelected = (schedule) => {
+  return schedule.selectedTokens.length === tokens.value.length && tokens.value.length > 0
+}
+
+const isScheduleIndeterminate = (schedule) => {
+  return schedule.selectedTokens.length > 0 && schedule.selectedTokens.length < tokens.value.length
+}
+
+const handleScheduleSelectAll = (schedule, checked) => {
+  if (checked) {
+    schedule.selectedTokens = tokens.value.map(t => t.id)
+  } else {
+    schedule.selectedTokens = []
+  }
+}
+
+// 检查时间的函数
+const checkSchedule = () => {
+  if (isRunning.value) return
+  if (schedules.value.length === 0) return
+
+  const now = new Date()
+  const currentHHMM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+
+  // 每一分钟只触发一次
+  if (currentHHMM === lastCheckedTime.value) return
+  lastCheckedTime.value = currentHHMM
+
+  schedules.value.forEach(schedule => {
+    if (!schedule.enabled) return
+    if (schedule.time === currentHHMM) {
+      // Determine tokens to run
+      let tokensToRun = []
+      if (schedule.runOnAll) {
+        tokensToRun = tokens.value.map(t => t.id)
+      } else if (schedule.selectedTokens && schedule.selectedTokens.length > 0) {
+        tokensToRun = schedule.selectedTokens
+      }
+
+      if (tokensToRun.length === 0) return
+
+      const taskName = scheduleTaskOptions.find(o => o.value === schedule.taskType)?.label
+      addLog({ time: new Date().toLocaleTimeString(), message: `⏰ 定时任务触发 (${schedule.time}) - ${taskName}`, type: 'info' })
+
+      switch (schedule.taskType) {
+        case 'daily': startBatch(tokensToRun); break;
+        case 'hangup': claimHangUpRewards(tokensToRun); break;
+        case 'add_hangup': batchAddHangUpTime(tokensToRun); break;
+        case 'bottle': resetBottles(tokensToRun); break;
+        case 'tower': climbTower(tokensToRun); break;
+        case 'study': batchStudy(tokensToRun); break;
+        case 'car_send': batchSmartSendCar(tokensToRun); break;
+        case 'car_claim': batchClaimCars(tokensToRun); break;
+        default: startBatch(tokensToRun);
+      }
+    }
+  })
+}
+
+onMounted(() => {
+  // 每1秒检查一次时间，但每分钟只执行一次逻辑
+  scheduleTimer = setInterval(checkSchedule, 1000)
+
+  // 尝试恢复之前的设置
+  const savedSchedule = localStorage.getItem('batch_schedules_v2')
+  if (savedSchedule) {
+    try {
+      const parsed = JSON.parse(savedSchedule)
+      schedules.value = parsed.map(s => ({
+        ...s,
+        runOnAll: s.runOnAll !== undefined ? s.runOnAll : (s.selectedTokens.length === 0)
+      }))
+    } catch (e) { }
+  } else {
+    // Migrate old settings
+    const oldSettings = localStorage.getItem('batch_schedule_settings')
+    if (oldSettings) {
+      try {
+        const parsed = JSON.parse(oldSettings)
+        if (parsed.enabled) {
+          schedules.value.push({
+            id: Date.now(),
+            enabled: parsed.enabled,
+            time: parsed.time,
+            taskType: parsed.taskType || 'daily',
+            runOnAll: true,
+            selectedTokens: []
+          })
+        }
+      } catch (e) { }
+    }
+  }
+})
+
+onUnmounted(() => {
+  if (scheduleTimer) clearInterval(scheduleTimer)
+})
+
+// 监听变化保存设置
+watch(schedules, (newVal) => {
+  localStorage.setItem('batch_schedules_v2', JSON.stringify(newVal))
+}, { deep: true })
 // Settings Modal State
 const showSettingsModal = ref(false)
 const currentSettingsTokenId = ref(null)
@@ -247,6 +477,10 @@ const getStatusText = (tokenId) => {
 
 const addLog = (log) => {
   logs.value.push(log)
+  // clear old logs if exceed 500 lines
+  if (logs.value.length > 500) {
+    logs.value.shift()
+  }
   nextTick(() => {
     if (logContainer.value) {
       logContainer.value.scrollTop = logContainer.value.scrollHeight
@@ -264,19 +498,20 @@ const waitForConnection = async (tokenId, timeout = 10000) => {
   return false
 }
 
-const resetBottles = async () => {
-  if (selectedTokens.value.length === 0) return
+const resetBottles = async (targetTokens = null) => {
+  const tokensToRun = Array.isArray(targetTokens) ? targetTokens : selectedTokens.value
+  if (tokensToRun.length === 0) return
 
   isRunning.value = true
   shouldStop.value = false
   logs.value = []
 
   // Reset status
-  selectedTokens.value.forEach(id => {
+  tokensToRun.forEach(id => {
     tokenStatus.value[id] = 'waiting'
   })
 
-  for (const tokenId of selectedTokens.value) {
+  for (const tokenId of tokensToRun) {
     if (shouldStop.value) break
 
     currentRunningTokenId.value = tokenId
@@ -317,19 +552,20 @@ const resetBottles = async () => {
   message.success('批量重置罐子结束')
 }
 
-const claimHangUpRewards = async () => {
-  if (selectedTokens.value.length === 0) return
+const claimHangUpRewards = async (targetTokens = null) => {
+  const tokensToRun = Array.isArray(targetTokens) ? targetTokens : selectedTokens.value
+  if (tokensToRun.length === 0) return
 
   isRunning.value = true
   shouldStop.value = false
   logs.value = []
 
   // Reset status
-  selectedTokens.value.forEach(id => {
+  tokensToRun.forEach(id => {
     tokenStatus.value[id] = 'waiting'
   })
 
-  for (const tokenId of selectedTokens.value) {
+  for (const tokenId of tokensToRun) {
     if (shouldStop.value) break
 
     currentRunningTokenId.value = tokenId
@@ -381,19 +617,20 @@ const claimHangUpRewards = async () => {
   message.success('批量领取挂机结束')
 }
 
-const batchAddHangUpTime = async () => {
-  if (selectedTokens.value.length === 0) return
+const batchAddHangUpTime = async (targetTokens = null) => {
+  const tokensToRun = Array.isArray(targetTokens) ? targetTokens : selectedTokens.value
+  if (tokensToRun.length === 0) return
 
   isRunning.value = true
   shouldStop.value = false
   logs.value = []
 
   // Reset status
-  selectedTokens.value.forEach(id => {
+  tokensToRun.forEach(id => {
     tokenStatus.value[id] = 'waiting'
   })
 
-  for (const tokenId of selectedTokens.value) {
+  for (const tokenId of tokensToRun) {
     if (shouldStop.value) break
 
     currentRunningTokenId.value = tokenId
@@ -450,6 +687,14 @@ const ensureConnection = async (tokenId) => {
       // First attempt failed
       addLog({ time: new Date().toLocaleTimeString(), message: `连接超时，尝试重连...`, type: 'warning' })
 
+      // Try to refresh token from IndexedDB
+      try {
+        addLog({ time: new Date().toLocaleTimeString(), message: `尝试刷新 Token...`, type: 'info' })
+        await tokenStore.refreshToken(tokenId)
+      } catch (e) {
+        console.error('Token refresh failed', e)
+      }
+
       // 3. Retry connection (Force reconnect)
       tokenStore.closeWebSocketConnection(tokenId)
       await new Promise(r => setTimeout(r, 2000)) // Wait longer for cleanup
@@ -485,19 +730,20 @@ const ensureConnection = async (tokenId) => {
   return true
 }
 
-const climbTower = async () => {
-  if (selectedTokens.value.length === 0) return
+const climbTower = async (targetTokens = null) => {
+  const tokensToRun = Array.isArray(targetTokens) ? targetTokens : selectedTokens.value
+  if (tokensToRun.length === 0) return
 
   isRunning.value = true
   shouldStop.value = false
   logs.value = []
 
   // Reset status
-  selectedTokens.value.forEach(id => {
+  tokensToRun.forEach(id => {
     tokenStatus.value[id] = 'waiting'
   })
 
-  for (const tokenId of selectedTokens.value) {
+  for (const tokenId of tokensToRun) {
     if (shouldStop.value) break
 
     currentRunningTokenId.value = tokenId
@@ -587,15 +833,16 @@ const climbTower = async () => {
   message.success('批量爬塔结束')
 }
 
-const batchStudy = async () => {
-  if (selectedTokens.value.length === 0) return
+const batchStudy = async (targetTokens = null) => {
+  const tokensToRun = Array.isArray(targetTokens) ? targetTokens : selectedTokens.value
+  if (tokensToRun.length === 0) return
 
   isRunning.value = true
   shouldStop.value = false
   logs.value = []
 
   // Reset status
-  selectedTokens.value.forEach(id => {
+  tokensToRun.forEach(id => {
     tokenStatus.value[id] = 'waiting'
   })
 
@@ -603,7 +850,7 @@ const batchStudy = async () => {
   addLog({ time: new Date().toLocaleTimeString(), message: `正在加载题库...`, type: 'info' })
   await preloadQuestions()
 
-  for (const tokenId of selectedTokens.value) {
+  for (const tokenId of tokensToRun) {
     if (shouldStop.value) break
 
     currentRunningTokenId.value = tokenId
@@ -750,19 +997,20 @@ const canClaim = (car) => {
   return Date.now() - tsMs >= FOUR_HOURS_MS
 }
 
-const batchSmartSendCar = async () => {
-  if (selectedTokens.value.length === 0) return
+const batchSmartSendCar = async (targetTokens = null) => {
+  const tokensToRun = Array.isArray(targetTokens) ? targetTokens : selectedTokens.value
+  if (tokensToRun.length === 0) return
 
   isRunning.value = true
   shouldStop.value = false
   logs.value = []
 
   // Reset status
-  selectedTokens.value.forEach(id => {
+  tokensToRun.forEach(id => {
     tokenStatus.value[id] = 'waiting'
   })
 
-  for (const tokenId of selectedTokens.value) {
+  for (const tokenId of tokensToRun) {
     if (shouldStop.value) break
 
     currentRunningTokenId.value = tokenId
@@ -899,19 +1147,20 @@ const batchSmartSendCar = async () => {
   message.success('批量智能发车结束')
 }
 
-const batchClaimCars = async () => {
-  if (selectedTokens.value.length === 0) return
+const batchClaimCars = async (targetTokens = null) => {
+  const tokensToRun = Array.isArray(targetTokens) ? targetTokens : selectedTokens.value
+  if (tokensToRun.length === 0) return
 
   isRunning.value = true
   shouldStop.value = false
   logs.value = []
 
   // Reset status
-  selectedTokens.value.forEach(id => {
+  tokensToRun.forEach(id => {
     tokenStatus.value[id] = 'waiting'
   })
 
-  for (const tokenId of selectedTokens.value) {
+  for (const tokenId of tokensToRun) {
     if (shouldStop.value) break
 
     currentRunningTokenId.value = tokenId
@@ -967,19 +1216,20 @@ const batchClaimCars = async () => {
   message.success('批量一键收车结束')
 }
 
-const startBatch = async () => {
-  if (selectedTokens.value.length === 0) return
+const startBatch = async (targetTokens = null) => {
+  const tokensToRun = Array.isArray(targetTokens) ? targetTokens : selectedTokens.value
+  if (tokensToRun.length === 0) return
 
   isRunning.value = true
   shouldStop.value = false
   logs.value = []
 
   // Reset status
-  selectedTokens.value.forEach(id => {
+  tokensToRun.forEach(id => {
     tokenStatus.value[id] = 'waiting'
   })
 
-  for (const tokenId of selectedTokens.value) {
+  for (const tokenId of tokensToRun) {
     if (shouldStop.value) break
 
     currentRunningTokenId.value = tokenId
