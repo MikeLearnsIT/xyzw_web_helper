@@ -82,11 +82,20 @@ const my_routes = [
         }
       },
       {
+        path: 'batch-daily-tasks',
+        name: 'BatchDailyTasks',
+        component: () => import('@/views/BatchDailyTasks.vue'),
+        meta: {
+          title: '批量日常',
+          requiresToken: true
+        }
+      },
+      {
         path: 'batch-tasks',
         name: 'BatchTasks',
         component: () => import('@/views/BatchTasks.vue'),
         meta: {
-          title: '批量日常',
+          title: '批量任务',
           requiresToken: true
         }
       },

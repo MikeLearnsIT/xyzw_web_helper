@@ -38,6 +38,12 @@
             </n-icon>
             <span>任务管理</span>
           </router-link>
+          <router-link to="/admin/batch-daily-tasks" class="nav-item" active-class="active">
+            <n-icon>
+              <Layers />
+            </n-icon>
+            <span>批量日常</span>
+          </router-link>
           <router-link to="/admin/batch-tasks" class="nav-item" active-class="active">
             <n-icon>
               <Layers />
