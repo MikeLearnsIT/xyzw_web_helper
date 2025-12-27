@@ -99,11 +99,6 @@
             <Layers />
           </n-icon>
           <span>每日任务</span>
-        </router-link> <router-link to="/admin/batch-tasks" class="drawer-item" @click="isMobileMenuOpen = false">
-          <n-icon>
-            <Layers />
-          </n-icon>
-          <span>批量任务</span>
         </router-link>
         <router-link to="/admin/batch-tasks" class="drawer-item" @click="isMobileMenuOpen = false">
           <n-icon>
