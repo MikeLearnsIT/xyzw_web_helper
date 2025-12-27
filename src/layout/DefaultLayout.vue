@@ -32,12 +32,6 @@
             </n-icon>
             <span>Token管理</span>
           </router-link>
-          <router-link to="/admin/daily-tasks" class="nav-item" active-class="active">
-            <n-icon>
-              <Settings />
-            </n-icon>
-            <span>任务管理</span>
-          </router-link>
           <router-link to="/admin/batch-daily-tasks" class="nav-item" active-class="active">
             <n-icon>
               <Layers />
@@ -100,11 +94,16 @@
           </n-icon>
           <span>Token管理</span>
         </router-link>
-        <router-link to="/admin/daily-tasks" class="drawer-item" @click="isMobileMenuOpen = false">
+        <router-link to="/admin/batch-daily-tasks" class="drawer-item" @click="isMobileMenuOpen = false">
           <n-icon>
-            <Settings />
+            <Layers />
           </n-icon>
-          <span>任务管理</span>
+          <span>每日任务</span>
+        </router-link> <router-link to="/admin/batch-tasks" class="drawer-item" @click="isMobileMenuOpen = false">
+          <n-icon>
+            <Layers />
+          </n-icon>
+          <span>批量任务</span>
         </router-link>
         <router-link to="/admin/batch-tasks" class="drawer-item" @click="isMobileMenuOpen = false">
           <n-icon>
