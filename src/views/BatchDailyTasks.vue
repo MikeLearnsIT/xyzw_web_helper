@@ -69,6 +69,12 @@
         <n-button size="small" @click="batcharenafight" :disabled="isRunning || selectedTokens.length === 0 || !isarenaActivityOpen">
           一键竞技场战斗3次
         </n-button>
+        <n-button size="small" @click="batchTopUpFish" :disabled="isRunning || selectedTokens.length === 0">
+          一键钓鱼补齐
+        </n-button>
+        <n-button size="small" @click="batchTopUpArena" :disabled="isRunning || selectedTokens.length === 0 || !isarenaActivityOpen">
+          一键竞技场补齐
+        </n-button>
       </n-space>
       <n-space vertical>
         <n-checkbox :checked="isAllSelected" :indeterminate="isIndeterminate" @update:checked="handleSelectAll">
@@ -165,13 +171,149 @@
       </div>
     </n-modal>
 
+    <!-- Scheduled Tasks -->
+    <n-card title="定时任务" class="scheduled-tasks-card" style="margin-top: 16px">
+      <n-space style="margin-bottom: 12px">
+        <n-button type="primary" size="small" @click="openTaskModal">
+          新增定时任务
+        </n-button>
+        <n-button size="small" @click="showTasksModal = true">
+          查看定时任务
+        </n-button>
+      </n-space>
+      
+      <!-- 简单的任务统计 -->
+      <div class="tasks-count" v-if="scheduledTasks.length > 0">
+        <p>已保存 {{ scheduledTasks.length }} 个定时任务</p>
+      </div>
+      <div class="tasks-count" v-else>
+        <p>暂无定时任务</p>
+      </div>
+    </n-card>
+
+    <!-- Tasks List Modal -->
+    <n-modal v-model:show="showTasksModal" preset="card" title="定时任务列表" style="width: 90%; max-width: 800px">
+      <div class="tasks-list" style="max-height: 600px; overflow-y: auto;">
+        <div v-for="task in scheduledTasks" :key="task.id" class="task-item" style="margin-bottom: 16px; padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div style="font-weight: bold;">{{ task.name }}</div>
+            <n-switch v-model:value="task.enabled" @update:value="toggleTaskEnabled(task.id, $event)">
+            </n-switch>
+          </div>
+          <div style="margin-bottom: 4px;">
+            <span style="color: #6b7280;">运行类型：</span>
+            <span>{{ task.runType === 'daily' ? '每天固定时间' : 'Cron表达式' }}</span>
+          </div>
+          <div style="margin-bottom: 4px;">
+            <span style="color: #6b7280;">运行时间：</span>
+            <span>{{ task.runType === 'daily' ? task.runTime : task.cronExpression }}</span>
+          </div>
+          <div style="margin-bottom: 4px;">
+            <span style="color: #6b7280;">选中账号：</span>
+            <span>{{ task.selectedTokens.length }} 个</span>
+          </div>
+          <div style="margin-bottom: 8px;">
+            <span style="color: #6b7280;">选中任务：</span>
+            <span>{{ task.selectedTasks.length }} 个</span>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <n-button size="tiny" @click="editTask(task)">
+              编辑
+            </n-button>
+            <n-button size="tiny" type="error" @click="deleteTask(task.id)">
+              删除
+            </n-button>
+          </div>
+        </div>
+        <div v-if="scheduledTasks.length === 0" style="text-align: center; padding: 24px; color: #6b7280;">
+          暂无定时任务
+        </div>
+      </div>
+    </n-modal>
+
+    <!-- Task Modal -->
+    <n-modal v-model:show="showTaskModal" preset="card" :title="editingTask ? '编辑定时任务' : '新增定时任务'" style="width: 90%; max-width: 600px">
+      <div class="settings-content">
+        <div class="settings-grid">
+          <div class="setting-item">
+            <label class="setting-label">任务名称</label>
+            <n-input v-model:value="taskForm.name" placeholder="请输入任务名称" />
+          </div>
+          <div class="setting-item">
+            <label class="setting-label">运行类型</label>
+            <n-radio-group v-model:value="taskForm.runType" @update:value="resetRunType">
+              <n-radio value="daily">每天固定时间</n-radio>
+              <n-radio value="cron">Cron表达式</n-radio>
+            </n-radio-group>
+          </div>
+          <div class="setting-item" v-if="taskForm.runType === 'daily'">
+            <label class="setting-label">运行时间</label>
+            <n-time-picker v-model:value="taskForm.runTime" format="HH:mm" />
+          </div>
+          <div class="setting-item" v-if="taskForm.runType === 'cron'">
+            <label class="setting-label">Cron表达式</label>
+            <n-input v-model:value="taskForm.cronExpression" placeholder="请输入Cron表达式" />
+          </div>
+          <div class="setting-item">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <label class="setting-label">选择账号</label>
+              <n-space size="small">
+                <n-button size="small" @click="selectAllTokens">
+                  全选
+                </n-button>
+                <n-button size="small" @click="deselectAllTokens">
+                  全不选
+                </n-button>
+              </n-space>
+            </div>
+            <n-checkbox-group v-model:value="taskForm.selectedTokens">
+              <n-grid :cols="2" :x-gap="12" :y-gap="8">
+                <n-grid-item v-for="token in tokens" :key="token.id">
+                  <n-checkbox :value="token.id">{{ token.name }}</n-checkbox>
+                </n-grid-item>
+              </n-grid>
+            </n-checkbox-group>
+          </div>
+          <div class="setting-item">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <label class="setting-label">选择任务</label>
+              <n-space size="small">
+                <n-button size="small" @click="selectAllTasks">
+                  全选
+                </n-button>
+                <n-button size="small" @click="deselectAllTasks">
+                  全不选
+                </n-button>
+              </n-space>
+            </div>
+            <n-checkbox-group v-model:value="taskForm.selectedTasks">
+              <n-grid :cols="2" :x-gap="12" :y-gap="8">
+                <n-grid-item v-for="task in availableTasks" :key="task.value">
+                  <n-checkbox :value="task.value">{{ task.label }}</n-checkbox>
+                </n-grid-item>
+              </n-grid>
+            </n-checkbox-group>
+          </div>
+        </div>
+        <div class="modal-actions" style="margin-top: 20px; text-align: right;">
+          <n-button @click="showTaskModal = false" style="margin-right: 12px">取消</n-button>
+          <n-button type="primary" @click="saveTask">保存</n-button>
+        </div>
+      </div>
+    </n-modal>
+
     <!-- Progress & Logs -->
     <div class="execution-area" v-if="currentRunningTokenId || logs.length > 0">
       <n-card :title="currentRunningTokenName ? `正在执行: ${currentRunningTokenName}` : '执行日志'" style="margin-top: 16px">
+        <template #extra>
+          <n-button size="small" @click="copyLogs">
+            复制日志
+          </n-button>
+        </template>
         <n-progress type="line" :percentage="currentProgress" :indicator-placement="'inside'" processing />
         <div class="log-container" ref="logContainer">
           <div v-for="(log, index) in logs" :key="index" class="log-item" :class="log.type">
-            <span class="time">[{{ log.time }}]</span>
+            <span class="time">{{ log.time }}</span>
             <span class="message">{{ log.message }}</span>
           </div>
         </div>
@@ -181,13 +323,15 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick, reactive } from 'vue'
+// Import required dependencies
+import { ref, computed, nextTick, reactive, watch, onMounted } from 'vue'
 import { useTokenStore } from '@/stores/tokenStore'
 import { DailyTaskRunner } from '@/utils/dailyTaskRunner'
 import { preloadQuestions } from '@/utils/studyQuestionsFromJSON.js'
 import { useMessage } from 'naive-ui'
 import { Settings } from '@vicons/ionicons5'
 
+// Initialize token store, message service, and task runner
 const tokenStore = useTokenStore()
 const message = useMessage()
 const runner = new DailyTaskRunner(tokenStore)
@@ -246,6 +390,325 @@ const helperModalTitle = computed(() => {
   const titles = { box: '批量开宝箱', fish: '批量钓鱼', recruit: '批量招募' }
   return titles[helperType.value] || '批量助手'
 })
+
+// ======================
+// Scheduled Tasks Feature
+// ======================
+
+// Scheduled Tasks State Management
+const scheduledTasks = ref([]) // List of all scheduled tasks
+const showTaskModal = ref(false) // Control the visibility of the add/edit task modal
+const showTasksModal = ref(false) // Control the visibility of the tasks list modal
+const editingTask = ref(null) // Currently editing task
+const taskForm = reactive({
+  name: '', // Task name
+  runType: 'daily', // 'daily' or 'cron'
+  runTime: null, // Daily run time (HH:mm format)
+  cronExpression: '', // Cron expression for complex scheduling
+  selectedTokens: [], // Selected token IDs
+  selectedTasks: [], // Selected task function names
+  enabled: true // Whether the task is enabled
+})
+
+// Available tasks for scheduling - Maps task function names to display labels
+const availableTasks = [
+  { label: '领取挂机', value: 'claimHangUpRewards' },
+  { label: '一键加钟', value: 'batchAddHangUpTime' },
+  { label: '重置罐子', value: 'resetBottles' },
+  { label: '一键领取罐子', value: 'batchlingguanzi' },
+  { label: '一键爬塔', value: 'climbTower' },
+  { label: '一键答题', value: 'batchStudy' },
+  { label: '智能发车', value: 'batchSmartSendCar' },
+  { label: '一键收车', value: 'batchClaimCars' },
+  { label: '批量开箱', value: 'batchOpenBox' },
+  { label: '领取宝箱积分', value: 'batchClaimBoxPointReward' },
+  { label: '批量钓鱼', value: 'batchFish' },
+  { label: '批量招募', value: 'batchRecruit' },
+  { label: '一键宝库前3层', value: 'batchbaoku13' },
+  { label: '一键宝库4,5层', value: 'batchbaoku45' },
+  { label: '一键梦境', value: 'batchmengjing' },
+  { label: '一键俱乐部签到', value: 'batchclubsign' },
+  { label: '一键竞技场战斗3次', value: 'batcharenafight' }
+]
+
+// Task table columns configuration for the tasks list modal
+const taskColumns = [
+  { title: '任务名称', key: 'name', width: 150 },
+  { title: '运行类型', key: 'runType', width: 100 },
+  { 
+    title: '运行时间', 
+    key: 'runTime', 
+    width: 150,
+    render: (row) => {
+      // Display appropriate time format based on run type
+      return row.runType === 'daily' ? row.runTime : row.cronExpression
+    }
+  },
+  { title: '选中账号', key: 'selectedTokens', width: 150, render: (row) => `${row.selectedTokens.length} 个` },
+  { title: '选中任务', key: 'selectedTasks', width: 150, render: (row) => `${row.selectedTasks.length} 个` },
+  { title: '状态', key: 'enabled', width: 80, render: (row) => row.enabled ? '启用' : '禁用' },
+  { title: '操作', key: 'actions', width: 150 }
+]
+
+// ======================
+// Scheduled Tasks Storage
+// ======================
+
+// Load scheduled tasks from localStorage
+const loadScheduledTasks = () => {
+  try {
+    const saved = localStorage.getItem('scheduledTasks')
+    console.log('Raw localStorage data:', saved)
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      console.log('Parsed data:', parsed)
+      console.log('Is array:', Array.isArray(parsed))
+      // Ensure we have an array
+      scheduledTasks.value = Array.isArray(parsed) ? parsed : []
+      console.log('Loaded scheduled tasks:', scheduledTasks.value)
+      console.log('Loaded tasks count:', scheduledTasks.value.length)
+    } else {
+      console.log('No saved tasks in localStorage')
+      scheduledTasks.value = []
+    }
+  } catch (error) {
+    console.error('Failed to load scheduled tasks:', error)
+    scheduledTasks.value = []
+  }
+}
+
+// Save scheduled tasks to localStorage
+const saveScheduledTasks = () => {
+  try {
+    const dataToSave = JSON.stringify(scheduledTasks.value)
+    console.log('Saving to localStorage:', dataToSave)
+    localStorage.setItem('scheduledTasks', dataToSave)
+    // Verify save was successful
+    const saved = localStorage.getItem('scheduledTasks')
+    console.log('Verified saved data:', saved)
+    console.log('Saved scheduled tasks:', scheduledTasks.value)
+    console.log('Saved tasks count:', scheduledTasks.value.length)
+  } catch (error) {
+    console.error('Failed to save scheduled tasks:', error)
+  }
+}
+
+// Open task modal for adding new task
+const openTaskModal = () => {
+  editingTask.value = null
+  Object.assign(taskForm, {
+    name: '',
+    runType: 'daily',
+    runTime: null,
+    cronExpression: '',
+    selectedTokens: [],
+    selectedTasks: [],
+    enabled: true
+  })
+  showTaskModal.value = true
+}
+
+// Edit existing task
+const editTask = (task) => {
+  editingTask.value = task
+  Object.assign(taskForm, { ...task })
+  showTaskModal.value = true
+}
+
+// Save task (create or update)
+const saveTask = () => {
+  if (!taskForm.name) {
+    message.warning('请输入任务名称')
+    return
+  }
+  
+  if (taskForm.runType === 'daily' && !taskForm.runTime) {
+    message.warning('请选择运行时间')
+    return
+  }
+  
+  if (taskForm.runType === 'cron' && !taskForm.cronExpression) {
+    message.warning('请输入Cron表达式')
+    return
+  }
+  
+  if (taskForm.selectedTokens.length === 0) {
+    message.warning('请选择至少一个账号')
+    return
+  }
+  
+  if (taskForm.selectedTasks.length === 0) {
+    message.warning('请选择至少一个任务')
+    return
+  }
+  
+  // Format runTime as string for storage
+  let formattedRunTime = null
+  if (taskForm.runType === 'daily' && taskForm.runTime) {
+    const time = new Date(taskForm.runTime)
+    formattedRunTime = time.toLocaleTimeString('zh-CN', { hour12: false, hour: '2-digit', minute: '2-digit' })
+  }
+  
+  const taskData = {
+    id: editingTask.value?.id || 'task_' + Date.now(),
+    name: taskForm.name,
+    runType: taskForm.runType,
+    runTime: formattedRunTime,
+    cronExpression: taskForm.runType === 'cron' ? taskForm.cronExpression : '',
+    selectedTokens: [...taskForm.selectedTokens],
+    selectedTasks: [...taskForm.selectedTasks],
+    enabled: taskForm.enabled
+  }
+  
+  if (editingTask.value) {
+    // Update existing task
+    const index = scheduledTasks.value.findIndex(t => t.id === editingTask.value.id)
+    if (index !== -1) {
+      scheduledTasks.value[index] = taskData
+    }
+  } else {
+    // Add new task
+    scheduledTasks.value.push(taskData)
+  }
+  
+  saveScheduledTasks()
+  console.log('After saving task, scheduledTasks.length:', scheduledTasks.value.length)
+  console.log('Scheduled tasks:', scheduledTasks.value)
+  showTaskModal.value = false
+  message.success('定时任务已保存')
+}
+
+// Delete task
+const deleteTask = (taskId) => {
+  scheduledTasks.value = scheduledTasks.value.filter(t => t.id !== taskId)
+  saveScheduledTasks()
+  message.success('定时任务已删除')
+}
+
+// Toggle task enabled state
+const toggleTaskEnabled = (taskId, enabled) => {
+  const task = scheduledTasks.value.find(t => t.id === taskId)
+  if (task) {
+    task.enabled = enabled
+    saveScheduledTasks()
+    message.success(`定时任务已${enabled ? '启用' : '禁用'}`)
+  }
+}
+
+// Reset run type related fields
+const resetRunType = () => {
+  if (taskForm.runType === 'daily') {
+    taskForm.cronExpression = ''
+  } else {
+    taskForm.runTime = null
+  }
+}
+
+// Select all tokens
+const selectAllTokens = () => {
+  taskForm.selectedTokens = tokens.value.map(token => token.id)
+}
+
+// Deselect all tokens
+const deselectAllTokens = () => {
+  taskForm.selectedTokens = []
+}
+
+// Select all tasks
+const selectAllTasks = () => {
+  taskForm.selectedTasks = availableTasks.map(task => task.value)
+}
+
+// Deselect all tasks
+const deselectAllTasks = () => {
+  taskForm.selectedTasks = []
+}
+
+// ======================
+// Scheduled Tasks Scheduler
+// ======================
+
+// Initialize scheduled tasks from localStorage
+loadScheduledTasks()
+
+// Watch for changes to scheduledTasks for debugging
+watch(scheduledTasks, (newVal) => {
+  console.log('scheduledTasks changed:', newVal.length)
+  console.log('New value:', newVal)
+}, { deep: true })
+
+// Debug: Log initial state when component mounts
+onMounted(() => {
+  console.log('Component mounted, initial scheduledTasks:', scheduledTasks.value)
+  console.log('Initial scheduledTasks length:', scheduledTasks.value.length)
+})
+
+// Task scheduler
+const scheduleTaskExecution = () => {
+  // Check every minute
+  setInterval(() => {
+    if (isRunning.value) return // Don't run if already executing tasks
+    
+    const now = new Date()
+    const currentTime = now.toLocaleTimeString('zh-CN', { hour12: false, hour: '2-digit', minute: '2-digit' })
+    
+    scheduledTasks.value.forEach(task => {
+      if (!task.enabled) return
+      
+      let shouldRun = false
+      
+      if (task.runType === 'daily') {
+        // Check if current time matches the scheduled time
+        shouldRun = currentTime === task.runTime
+      } else if (task.runType === 'cron') {
+        // Simple cron expression parsing (minute hour * * *)
+        try {
+          const [minute, hour, , ,] = task.cronExpression.split(' ').map(Number)
+          shouldRun = now.getMinutes() === minute && now.getHours() === hour
+        } catch (error) {
+          console.error('Invalid cron expression:', task.cronExpression, error)
+          return
+        }
+      }
+      
+      if (shouldRun) {
+        executeScheduledTask(task)
+      }
+    })
+  }, 60000) // Check every minute
+}
+
+// Execute a scheduled task
+const executeScheduledTask = async (task) => {
+  addLog({ time: new Date().toLocaleTimeString(), message: `=== 开始执行定时任务: ${task.name} ===`, type: 'info' })
+  
+  try {
+    // Set selected tokens from the task
+    selectedTokens.value = [...task.selectedTokens]
+    
+    // Execute each selected task
+    for (const taskName of task.selectedTasks) {
+      if (shouldStop.value) break
+      
+      addLog({ time: new Date().toLocaleTimeString(), message: `执行任务: ${availableTasks.find(t => t.value === taskName)?.label || taskName}`, type: 'info' })
+      
+      // Call the task function dynamically
+      const taskFunction = eval(taskName)
+      if (typeof taskFunction === 'function') {
+        await taskFunction()
+      } else {
+        addLog({ time: new Date().toLocaleTimeString(), message: `任务函数不存在: ${taskName}`, type: 'error' })
+      }
+    }
+    
+    addLog({ time: new Date().toLocaleTimeString(), message: `=== 定时任务执行完成: ${task.name} ===`, type: 'success' })
+  } catch (error) {
+    addLog({ time: new Date().toLocaleTimeString(), message: `定时任务执行失败: ${error.message}`, type: 'error' })
+  }
+}
+
+// Start the task scheduler
+scheduleTaskExecution()
 
 const boxTypeOptions = [
   { label: '木质宝箱', value: 2001 },
@@ -373,6 +836,20 @@ const pickArenaTargetId = (targets) => {
   return targets?.roleId || targets?.id
 }
 
+// 月度任务常量
+const FISH_TARGET = 320
+const ARENA_TARGET = 240
+// 日期辅助函数
+const getTodayStartSec = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return Math.floor(d.getTime() / 1000) }
+const isTodayAvailable = (lastTimeSec) => { if (!lastTimeSec || typeof lastTimeSec !== 'number') return true; return lastTimeSec < getTodayStartSec() }
+// 计算月度任务进度
+const calculateMonthProgress = () => {
+  const now = new Date()
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+  const dayOfMonth = now.getDate()
+  return Math.min(1, Math.max(0, dayOfMonth / daysInMonth))
+}
+
 const addLog = (log) => {
   logs.value.push(log)
   nextTick(() => {
@@ -380,6 +857,21 @@ const addLog = (log) => {
       logContainer.value.scrollTop = logContainer.value.scrollHeight
     }
   })
+}
+
+const copyLogs = () => {
+  if (logs.value.length === 0) {
+    message.warning('没有可复制的日志')
+    return
+  }
+  const logText = logs.value.map(log => `${log.time} ${log.message}`).join('\n')
+  navigator.clipboard.writeText(logText)
+    .then(() => {
+      message.success('日志已复制到剪贴板')
+    })
+    .catch(err => {
+      message.error('复制日志失败: ' + err.message)
+    })
 }
 
 const waitForConnection = async (tokenId, timeout = 10000) => {
@@ -1069,6 +1561,254 @@ const batchStudy = async () => {
   isRunning.value = false
   currentRunningTokenId.value = null
   message.success('批量答题结束')
+}
+
+// 批量钓鱼补齐
+const batchTopUpFish = async () => {
+  if (selectedTokens.value.length === 0) return
+  isRunning.value = true
+  shouldStop.value = false
+  logs.value = []
+  // Reset status
+  selectedTokens.value.forEach(id => {
+    tokenStatus.value[id] = 'waiting'
+  })
+  for (const tokenId of selectedTokens.value) {
+    if (shouldStop.value) break
+    currentRunningTokenId.value = tokenId
+    tokenStatus.value[tokenId] = 'running'
+    currentProgress.value = 0
+    const token = tokens.value.find(t => t.id === tokenId)
+    try {
+      addLog({ time: new Date().toLocaleTimeString(), message: `=== 开始钓鱼补齐: ${token.name} ===`, type: 'info' })
+      await ensureConnection(tokenId)
+      // 获取月度任务进度
+      addLog({ time: new Date().toLocaleTimeString(), message: `获取月度任务进度...`, type: 'info' })
+      const result = await tokenStore.sendMessageWithPromise(tokenId, 'activity_get', {}, 10000)
+      const act = result?.activity || result?.body?.activity || result
+      
+      if (!act) {
+        addLog({ time: new Date().toLocaleTimeString(), message: `获取月度任务进度失败`, type: 'error' })
+        tokenStatus.value[tokenId] = 'failed'
+        continue
+      }
+      const myMonthInfo = act.myMonthInfo || {}
+      const fishNum = Number(myMonthInfo?.['2']?.num || 0)
+      
+      // 计算目标数量
+      const monthProgress = calculateMonthProgress()
+      const now = new Date()
+      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+      const dayOfMonth = now.getDate()
+      const remainingDays = Math.max(0, daysInMonth - dayOfMonth)
+      const shouldBe = remainingDays === 0 ? FISH_TARGET : Math.min(FISH_TARGET, Math.ceil(monthProgress * FISH_TARGET))
+      const need = Math.max(0, shouldBe - fishNum)
+      addLog({ time: new Date().toLocaleTimeString(), message: `当前进度: ${fishNum}/${FISH_TARGET}，需要补齐: ${need}次`, type: 'info' })
+      if (need <= 0) {
+        addLog({ time: new Date().toLocaleTimeString(), message: `当前进度已达标，无需补齐`, type: 'success' })
+        tokenStatus.value[tokenId] = 'completed'
+        continue
+      }
+      // 执行钓鱼补齐
+      addLog({ time: new Date().toLocaleTimeString(), message: `开始执行钓鱼补齐...`, type: 'info' })
+      // 检查免费次数
+      let role = tokenStore.gameData?.roleInfo?.role
+      if (!role) {
+        try {
+          const roleInfo = await tokenStore.sendGetRoleInfo(tokenId)
+          role = roleInfo?.role
+        } catch {}
+      }
+      let freeUsed = 0
+      const lastFreeTime = Number(role?.statisticsTime?.['artifact:normal:lottery:time'] || 0)
+      if (isTodayAvailable(lastFreeTime)) {
+        addLog({ time: new Date().toLocaleTimeString(), message: `检测到今日免费钓鱼次数，开始消耗 3 次`, type: 'info' })
+        for (let i = 0; i < 3 && need > freeUsed && !shouldStop.value; i++) {
+          try {
+            await tokenStore.sendMessageWithPromise(tokenId, 'artifact_lottery', { lotteryNumber: 1, newFree: true, type: 1 }, 8000)
+            freeUsed++
+            await new Promise(r => setTimeout(r, 500))
+          } catch (e) {
+            addLog({ time: new Date().toLocaleTimeString(), message: `免费钓鱼失败: ${e.message}`, type: 'error' })
+            break
+          }
+        }
+      }
+      // 获取最新进度
+      const updatedResult = await tokenStore.sendMessageWithPromise(tokenId, 'activity_get', {}, 10000)
+      const updatedAct = updatedResult?.activity || updatedResult?.body?.activity || updatedResult
+      const updatedMyMonthInfo = updatedAct.myMonthInfo || {}
+      const updatedFishNum = Number(updatedMyMonthInfo?.['2']?.num || 0)
+      let remaining = Math.max(0, shouldBe - updatedFishNum)
+      addLog({ time: new Date().toLocaleTimeString(), message: `免费次数后进度: ${updatedFishNum}/${FISH_TARGET}，还需补齐: ${remaining}次`, type: 'info' })
+      if (remaining <= 0) {
+        addLog({ time: new Date().toLocaleTimeString(), message: `已通过免费次数完成目标`, type: 'success' })
+        tokenStatus.value[tokenId] = 'completed'
+        continue
+      }
+      // 付费钓鱼
+      addLog({ time: new Date().toLocaleTimeString(), message: `开始付费钓鱼补齐: 共需 ${remaining} 次（每次最多10）`, type: 'info' })
+      
+      while (remaining > 0 && !shouldStop.value) {
+        const batch = Math.min(10, remaining)
+        try {
+          await tokenStore.sendMessageWithPromise(tokenId, 'artifact_lottery', { lotteryNumber: batch, newFree: true, type: 1 }, 12000)
+          addLog({ time: new Date().toLocaleTimeString(), message: `完成 ${batch} 次付费钓鱼`, type: 'info' })
+          remaining -= batch
+          await new Promise(r => setTimeout(r, 800))
+        } catch (e) {
+          addLog({ time: new Date().toLocaleTimeString(), message: `付费钓鱼失败: ${e.message}`, type: 'error' })
+          break
+        }
+      }
+      // 最终进度检查
+      const finalResult = await tokenStore.sendMessageWithPromise(tokenId, 'activity_get', {}, 10000)
+      const finalAct = finalResult?.activity || finalResult?.body?.activity || finalResult
+      const finalMyMonthInfo = finalAct.myMonthInfo || {}
+      const finalFishNum = Number(finalMyMonthInfo?.['2']?.num || 0)
+      if (finalFishNum >= shouldBe || finalFishNum >= FISH_TARGET) {
+        addLog({ time: new Date().toLocaleTimeString(), message: `钓鱼补齐完成，最终进度: ${finalFishNum}/${FISH_TARGET}`, type: 'success' })
+      } else {
+        addLog({ time: new Date().toLocaleTimeString(), message: `钓鱼补齐已停止，未达到目标，最终进度: ${finalFishNum}/${FISH_TARGET}`, type: 'warning' })
+      }
+      tokenStatus.value[tokenId] = 'completed'
+    } catch (error) {
+      console.error(error)
+      tokenStatus.value[tokenId] = 'failed'
+      addLog({ time: new Date().toLocaleTimeString(), message: `钓鱼补齐失败: ${error.message}`, type: 'error' })
+    }
+    currentProgress.value = 100
+    await new Promise(r => setTimeout(r, 500))
+  }
+  isRunning.value = false
+  currentRunningTokenId.value = null
+  message.success('批量钓鱼补齐结束')
+}
+// 批量竞技场补齐
+const batchTopUpArena = async () => {
+  if (selectedTokens.value.length === 0) return
+  isRunning.value = true
+  shouldStop.value = false
+  logs.value = []
+  // Reset status
+  selectedTokens.value.forEach(id => {
+    tokenStatus.value[id] = 'waiting'
+  })
+  for (const tokenId of selectedTokens.value) {
+    if (shouldStop.value) break
+    currentRunningTokenId.value = tokenId
+    tokenStatus.value[tokenId] = 'running'
+    currentProgress.value = 0
+    const token = tokens.value.find(t => t.id === tokenId)
+    try {
+      addLog({ time: new Date().toLocaleTimeString(), message: `=== 开始竞技场补齐: ${token.name} ===`, type: 'info' })
+      await ensureConnection(tokenId)
+      // 获取月度任务进度
+      addLog({ time: new Date().toLocaleTimeString(), message: `获取月度任务进度...`, type: 'info' })
+      const result = await tokenStore.sendMessageWithPromise(tokenId, 'activity_get', {}, 10000)
+      const act = result?.activity || result?.body?.activity || result
+      
+      if (!act) {
+        addLog({ time: new Date().toLocaleTimeString(), message: `获取月度任务进度失败`, type: 'error' })
+        tokenStatus.value[tokenId] = 'failed'
+        continue
+      }
+      const myArenaInfo = act.myArenaInfo || {}
+      const arenaNum = Number(myArenaInfo?.num || 0)
+      
+      // 计算目标数量
+      const monthProgress = calculateMonthProgress()
+      const now = new Date()
+      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+      const dayOfMonth = now.getDate()
+      const remainingDays = Math.max(0, daysInMonth - dayOfMonth)
+      const shouldBe = remainingDays === 0 ? ARENA_TARGET : Math.min(ARENA_TARGET, Math.ceil(monthProgress * ARENA_TARGET))
+      const need = Math.max(0, shouldBe - arenaNum)
+      addLog({ time: new Date().toLocaleTimeString(), message: `当前进度: ${arenaNum}/${ARENA_TARGET}，需要补齐: ${need}次`, type: 'info' })
+      if (need <= 0) {
+        addLog({ time: new Date().toLocaleTimeString(), message: `当前进度已达标，无需补齐`, type: 'success' })
+        tokenStatus.value[tokenId] = 'completed'
+        continue
+      }
+      // 执行竞技场补齐
+      addLog({ time: new Date().toLocaleTimeString(), message: `开始执行竞技场补齐...`, type: 'info' })
+      // 开始竞技场
+      try {
+        await tokenStore.sendMessageWithPromise(tokenId, 'arena_startarea', {}, 6000)
+      } catch (error) {
+        addLog({ time: new Date().toLocaleTimeString(), message: `开始竞技场失败: ${error.message}`, type: 'warning' })
+        // 继续执行，可能已经在竞技场中
+      }
+      let safetyCounter = 0
+      const safetyMaxFights = 100
+      let round = 1
+      let remaining = need
+      while (remaining > 0 && safetyCounter < safetyMaxFights && !shouldStop.value) {
+        const planFights = Math.ceil(remaining / 2) // 估计每场战斗可能获得2次进度
+        addLog({ time: new Date().toLocaleTimeString(), message: `第${round}轮：计划战斗 ${planFights} 场`, type: 'info' })
+        
+        for (let i = 0; i < planFights && safetyCounter < safetyMaxFights && !shouldStop.value; i++) {
+          let targets
+          try {
+            targets = await tokenStore.sendMessageWithPromise(tokenId, 'arena_getareatarget', {}, 8000)
+          } catch (err) {
+            addLog({ time: new Date().toLocaleTimeString(), message: `获取竞技场目标失败：${err.message}`, type: 'error' })
+            break
+          }
+          
+          const targetId = pickArenaTargetId(targets)
+          if (!targetId) {
+            addLog({ time: new Date().toLocaleTimeString(), message: `未找到可用的竞技场目标`, type: 'warning' })
+            break
+          }
+          
+          try {
+            await tokenStore.sendMessageWithPromise(tokenId, 'fight_startareaarena', { targetId }, 15000)
+            addLog({ time: new Date().toLocaleTimeString(), message: `竞技场战斗 ${i + 1}/${planFights} 完成`, type: 'info' })
+          } catch (e) {
+            addLog({ time: new Date().toLocaleTimeString(), message: `竞技场对决失败：${e.message}`, type: 'error' })
+            // 继续尝试下一场战斗
+          }
+          
+          safetyCounter++
+          await new Promise(r => setTimeout(r, 1200))
+        }
+        
+        // 获取最新进度
+        const updatedResult = await tokenStore.sendMessageWithPromise(tokenId, 'activity_get', {}, 10000)
+        const updatedAct = updatedResult?.activity || updatedResult?.body?.activity || updatedResult
+        const updatedMyArenaInfo = updatedAct.myArenaInfo || {}
+        const updatedArenaNum = Number(updatedMyArenaInfo?.num || 0)
+        remaining = Math.max(0, shouldBe - updatedArenaNum)
+        
+        addLog({ time: new Date().toLocaleTimeString(), message: `第${round}轮后进度: ${updatedArenaNum}/${ARENA_TARGET}，还需补齐: ${remaining}次`, type: 'info' })
+        
+        round++
+      }
+      // 最终进度检查
+      const finalResult = await tokenStore.sendMessageWithPromise(tokenId, 'activity_get', {}, 10000)
+      const finalAct = finalResult?.activity || finalResult?.body?.activity || finalResult
+      const finalMyArenaInfo = finalAct.myArenaInfo || {}
+      const finalArenaNum = Number(finalMyArenaInfo?.num || 0)
+      if (finalArenaNum >= shouldBe || finalArenaNum >= ARENA_TARGET) {
+        addLog({ time: new Date().toLocaleTimeString(), message: `竞技场补齐完成，最终进度: ${finalArenaNum}/${ARENA_TARGET}`, type: 'success' })
+      } else if (safetyCounter >= safetyMaxFights) {
+        addLog({ time: new Date().toLocaleTimeString(), message: `达到安全上限，竞技场补齐已停止，最终进度: ${finalArenaNum}/${ARENA_TARGET}`, type: 'warning' })
+      } else {
+        addLog({ time: new Date().toLocaleTimeString(), message: `竞技场补齐已停止，未达到目标，最终进度: ${finalArenaNum}/${ARENA_TARGET}`, type: 'warning' })
+      }
+      tokenStatus.value[tokenId] = 'completed'
+    } catch (error) {
+      console.error(error)
+      tokenStatus.value[tokenId] = 'failed'
+      addLog({ time: new Date().toLocaleTimeString(), message: `竞技场补齐失败: ${error.message}`, type: 'error' })
+    }
+    currentProgress.value = 100
+    await new Promise(r => setTimeout(r, 500))
+  }
+  isRunning.value = false
+  currentRunningTokenId.value = null
+  message.success('批量竞技场补齐结束')
 }
 
 // --- Car Helper Functions ---

@@ -9,8 +9,8 @@
         </div>
       </div>
       <div class="inline-container">
-        <a-date-picker v-model:value="inputDate1" @change="fetchBattleRecordsByDate" valueFormat="YYYY/MM/DD"
-          :disabled-date="disabledDate" />
+        <a-date-picker v-model:value="inputDate1" :defaultValue="inputDate1" @change="fetchBattleRecordsByDate"
+          valueFormat="YYYY/MM/DD" format="YYYY/MM/DD" :disabled-date="disabledDate" />
         <n-button size="small" :disabled="loading1" @click="handleRefresh1">
           <template #icon>
             <n-icon>
@@ -491,9 +491,7 @@ defineExpose({
 
 // Inline 模式：挂载后自动拉取
 onMounted(() => {
-  if (props.inline) {
-    fetchBattleRecords1()
-  }
+  fetchBattleRecords1()
 })
 </script>
 
