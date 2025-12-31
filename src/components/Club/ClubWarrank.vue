@@ -2,11 +2,17 @@
   <div>
     <div class="status-card club-warrank">
       <div class="card-header">
-        <img src="/icons/1733492491706152.png" alt="俱乐部图标" class="status-icon">
+        <img src="/icons/moonPalace.png" alt="俱乐部图标" class="status-icon">
         <div class="status-info">
           <h3>盐场匹配信息详情</h3>
           <p>俱乐部盐场匹配详情</p>
         </div>
+      </div>
+      <div class="inline-container">
+        <n-checkbox-group v-model:value="exportmethod" name="group-exportmethod" size="small">
+          <n-checkbox value="1">表格导出</n-checkbox>
+          <n-checkbox value="2">图片导出</n-checkbox>
+        </n-checkbox-group>
       </div>
       <div class="inline-container">
         <a-date-picker v-model:value="inputDate1" :defaultValue="inputDate1" @change="fetchBattleRecordsByDate"
@@ -23,16 +29,14 @@
               <Copy />
             </n-icon>
           </template>导出</n-button>
+      </div>
+      <div class="inline-container">
         <n-button type="info" size="small" :disabled="!battleRecords1 || loading1" @click="hcSort">
           <template #icon>
           </template>红淬排序</n-button>
         <n-button type="info" size="small" :disabled="!battleRecords1 || loading1" @click="scoreSort">
           <template #icon>
           </template>积分排序</n-button>
-        <n-checkbox-group v-model:value="exportmethod" name="group-exportmethod" size="small">
-          <n-checkbox value="1">表格导出</n-checkbox>
-          <n-checkbox value="2">图片导出</n-checkbox>
-        </n-checkbox-group>
       </div>
 
 
@@ -68,7 +72,7 @@
                 <span class="stat-inline rednumber">车头2 {{ member.redno2 || 0 }}/{{ member.hb2 || 0 }}四圣</span>
                 <span class="stat-inline rednumber">车头3 {{ member.redno3 || 0 }}/{{ member.hb3 || 0 }}四圣</span>
                 <span class="stat-inline Sscore" v-if="member.sRScore !== -1">积分 {{ formatScore(member.sRScore) || 0
-                  }}</span>
+                }}</span>
                 <span class="stat-inline alliance">所属联盟: {{ allianceincludes(member.announcement) || '' }}</span>
                 <span class="stat-inline tipsgg">公告: {{ member.announcement || '' }}</span>
               </div>
@@ -540,6 +544,7 @@ onMounted(() => {
     display: flex;
     align-items: center;
     gap: 8px;
+    margin-bottom: var(--spacing-sm);
   }
 
   .member-header {
@@ -611,244 +616,245 @@ onMounted(() => {
         white-space: normal
       }
     }
+  }
 
-    .details-button {
-      flex-shrink: 0;
-      margin-left: auto;
+  .details-button {
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+
+  .stat-inline {
+    font-size: var(--font-size-xs);
+    padding: 2px 8px;
+    border-radius: var(--border-radius-small);
+    white-space: nowrap;
+    min-width: 52px;
+    text-align: center;
+
+    &.win {
+      background: rgba(16, 185, 129, 0.1);
+      color: #059669;
     }
 
-    .stat-inline {
-      font-size: var(--font-size-xs);
-      padding: 2px 8px;
-      border-radius: var(--border-radius-small);
-      white-space: nowrap;
-      min-width: 52px;
-      text-align: center;
-
-      &.win {
-        background: rgba(16, 185, 129, 0.1);
-        color: #059669;
-      }
-
-      &.loss {
-        background: rgba(239, 68, 68, 0.1);
-        color: #dc2626;
-      }
-
-      &.siege {
-        background: rgba(245, 158, 11, 0.1);
-        color: #d97706;
-      }
-
-      &.Resurrectio {
-        background: rgba(250, 76, 44, 0.1);
-        color: #F96F19;
-      }
-
-      &.rednumber {
-        background: rgba(0, 204, 221, 0.1);
-        color: #00BFFF;
-      }
-
-      &.alliance {
-        background: rgba(166, 211, 248, 0.1);
-        color: #7AC1F9;
-      }
-
-      &.tipsgg {
-        background: rgba(194, 166, 248, 0.1);
-        color: #AE86F9;
-      }
-
-      &.Sscore {
-        background: rgba(244, 162, 216, 0.1);
-        color: #FA79CE;
-      }
-
+    &.loss {
+      background: rgba(239, 68, 68, 0.1);
+      color: #dc2626;
     }
 
-    .battle-details {
-      margin-top: var(--spacing-lg);
-      padding-top: var(--spacing-lg);
-      border-top: 1px solid var(--border-light);
+    &.siege {
+      background: rgba(245, 158, 11, 0.1);
+      color: #d97706;
     }
 
-    .battles-list {
-      display: flex;
-      flex-direction: column;
-      gap: var(--spacing-md);
-      max-height: 400px;
-      overflow-y: auto;
+    &.Resurrectio {
+      background: rgba(250, 76, 44, 0.1);
+      color: #F96F19;
     }
 
-    .battle-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: var(--spacing-md);
-      background: var(--bg-primary);
-      border-radius: var(--border-radius-medium);
-      border-left: 3px solid transparent;
-
-      &.battle-win {
-        border-left-color: #10b981;
-      }
-
-      &.battle-loss {
-        border-left-color: #ef4444;
-      }
+    &.rednumber {
+      background: rgba(0, 204, 221, 0.1);
+      color: #00BFFF;
     }
 
-    .battle-participants {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-lg);
-      flex: 1;
+    &.alliance {
+      background: rgba(166, 211, 248, 0.1);
+      color: #7AC1F9;
     }
 
-    .participant {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-sm);
-      min-width: 0;
+    &.tipsgg {
+      background: rgba(194, 166, 248, 0.1);
+      color: #AE86F9;
     }
 
-    .participant-avatar {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      object-fit: cover;
-      flex-shrink: 0;
+    &.Sscore {
+      background: rgba(244, 162, 216, 0.1);
+      color: #FA79CE;
     }
 
-    .participant-name {
-      font-size: var(--font-size-sm);
-      color: var(--text-secondary);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+  }
+
+  .battle-details {
+    margin-top: var(--spacing-lg);
+    padding-top: var(--spacing-lg);
+    border-top: 1px solid var(--border-light);
+  }
+
+  .battles-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  .battle-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md);
+    background: var(--bg-primary);
+    border-radius: var(--border-radius-medium);
+    border-left: 3px solid transparent;
+
+    &.battle-win {
+      border-left-color: #10b981;
     }
 
-    .battle-vs {
-      display: flex;
-      flex-direction: column;
-      gap: var(--spacing-xs);
-      align-items: center;
-    }
-
-    .battle-time {
-      font-size: var(--font-size-xs);
-      color: var(--text-tertiary);
-      white-space: nowrap;
-    }
-
-    .no-battles {
-      padding: var(--spacing-xl);
-      text-align: center;
-    }
-
-    .meta {
-      .name {
-        font-size: var(--font-size-lg);
-        font-weight: var(--font-weight-semibold);
-      }
-
-      .sub {
-        color: var(--text-secondary);
-        font-size: var(--font-size-sm);
-      }
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-      gap: var(--spacing-md);
-    }
-
-    .item {
-      background: var(--bg-tertiary);
-      border-radius: var(--border-radius-medium);
-      padding: var(--spacing-sm);
-
-      .label {
-        color: var(--text-secondary);
-        font-size: var(--font-size-xs);
-        margin-bottom: 2px;
-      }
-
-      .value {
-        font-weight: var(--font-weight-medium);
-      }
-    }
-
-    .announcement .label,
-    .leader .label {
-      color: var(--text-secondary);
-      font-size: var(--font-size-sm);
-      margin-bottom: 4px;
-    }
-
-    .announcement .text {
-      white-space: pre-wrap;
-    }
-
-    .leader .leader-info {
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-sm);
-    }
-
-    .members-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .member-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px;
-      border-radius: 8px;
-      background: var(--bg-tertiary);
-    }
-
-    .member-row .left {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .member-row .right {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: var(--text-secondary);
-    }
-
-    .member-row .name {
-      font-weight: var(--font-weight-medium);
-    }
-
-    .member-row .power {
-      font-feature-settings: 'tnum' 1;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .hint {
-      margin-top: 8px;
-      color: var(--text-tertiary);
-      font-size: var(--font-size-xs);
-    }
-
-    .empty-club {
-      text-align: center;
-    }
-
-    .empty-club .actions {
-      margin-top: var(--spacing-sm);
+    &.battle-loss {
+      border-left-color: #ef4444;
     }
   }
+
+  .battle-participants {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+    flex: 1;
+  }
+
+  .participant {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    min-width: 0;
+  }
+
+  .participant-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+
+  .participant-name {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .battle-vs {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    align-items: center;
+  }
+
+  .battle-time {
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary);
+    white-space: nowrap;
+  }
+
+  .no-battles {
+    padding: var(--spacing-xl);
+    text-align: center;
+  }
+
+  .meta {
+    .name {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+    }
+
+    .sub {
+      color: var(--text-secondary);
+      font-size: var(--font-size-sm);
+    }
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: var(--spacing-md);
+  }
+
+  .item {
+    background: var(--bg-tertiary);
+    border-radius: var(--border-radius-medium);
+    padding: var(--spacing-sm);
+
+    .label {
+      color: var(--text-secondary);
+      font-size: var(--font-size-xs);
+      margin-bottom: 2px;
+    }
+
+    .value {
+      font-weight: var(--font-weight-medium);
+    }
+  }
+
+  .announcement .label,
+  .leader .label {
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    margin-bottom: 4px;
+  }
+
+  .announcement .text {
+    white-space: pre-wrap;
+  }
+
+  .leader .leader-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+  }
+
+  .members-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .member-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px;
+    border-radius: 8px;
+    background: var(--bg-tertiary);
+  }
+
+  .member-row .left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .member-row .right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+  }
+
+  .member-row .name {
+    font-weight: var(--font-weight-medium);
+  }
+
+  .member-row .power {
+    font-feature-settings: 'tnum' 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .hint {
+    margin-top: 8px;
+    color: var(--text-tertiary);
+    font-size: var(--font-size-xs);
+  }
+
+  .empty-club {
+    text-align: center;
+  }
+
+  .empty-club .actions {
+    margin-top: var(--spacing-sm);
+  }
+
 
   /* 卡片基础样式，保持与 GameStatus 一致 */
   .status-card {
