@@ -98,6 +98,7 @@ export default defineConfig(async () => {
     server: {
       port: 3000,
       open: true,
+      host: true,
     },
     css: {
       preprocessorOptions: {
