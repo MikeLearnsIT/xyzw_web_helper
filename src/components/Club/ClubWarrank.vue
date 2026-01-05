@@ -160,7 +160,7 @@
                     <div class="hero-stats">
                       <span class="hero-power">{{ formatPower(hero.power) }}</span>
                       <span class="hero-redquench" :class="getRedQuenchClass(hero.redQuench)">{{ hero.redQuench
-                        }}红</span>
+                      }}红</span>
                     </div>
                   </div>
                 </div>
@@ -260,19 +260,19 @@
               <div class="summary-item">
                 <span class="summary-label">胜率：</span>
                 <span class="summary-value">{{ ((fightResult.winCount / fightResult.totalCount) * 100).toFixed(2)
-                  }}%</span>
+                }}%</span>
               </div>
               <div class="summary-item">
                 <span class="summary-label">我方掉将率：</span>
                 <span class="summary-value">{{ ((dieStats.ourDieHeroGameCount / fightResult.totalCount) *
                   100).toFixed(2)
-                  }}%</span>
+                }}%</span>
               </div>
               <div class="summary-item">
                 <span class="summary-label">敌方掉将率：</span>
                 <span class="summary-value">{{ ((dieStats.enemyDieHeroGameCount / fightResult.totalCount) *
                   100).toFixed(2)
-                  }}%</span>
+                }}%</span>
               </div>
             </div>
           </div>
@@ -417,7 +417,7 @@
             </n-descriptions-item>
             <n-descriptions-item label="鱼珠技能">
               {{ heroModealTemp?.PearlInfo?.PearlSkill?.name != undefined ? heroModealTemp.PearlInfo?.PearlSkill?.name :
-              '无'
+                '无'
               }}
             </n-descriptions-item>
           </n-descriptions>
@@ -644,7 +644,8 @@ const getHeroInfo = (heroObj) => {
         HolyBeast: hero.hB?.active === true,   //激活四圣
         // 添加英雄详情信息
         skillList: hero.skillList || [],
-        attributeList: hero.attributeList || []
+        attributeList: hero.attributeList || [],
+        battleTeamSlot: hero.battleTeamSlot,   //阵容站位
       };
 
       // 只添加有效的英雄
@@ -662,7 +663,7 @@ const getHeroInfo = (heroObj) => {
     console.error('处理英雄信息时发生错误:', error);
     heroList = [];
   }
-
+  heroList.sort((a, b) => a.battleTeamSlot - b.battleTeamSlot);
   return { redCount, holeCount, heroList };
 }
 
