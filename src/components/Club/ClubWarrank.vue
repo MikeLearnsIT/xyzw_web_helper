@@ -10,7 +10,7 @@
             <p>俱乐部盐场匹配详情</p>
           </div>
         </div>
-
+        
         <!-- 数据统计区 -->
         <div class="stats-section" v-if="battleRecords1 && battleRecords1.legionRankList">
           <div class="stat-item">
@@ -23,7 +23,7 @@
           </div>
         </div>
       </div>
-
+      
       <!-- 功能操作区 -->
       <div class="function-section">
         <div class="function-left">
@@ -34,9 +34,9 @@
             </n-checkbox-group>
           </div>
         </div>
-
+        
         <div class="function-right">
-          <a-date-picker v-model:value="inputDate1" :defaultValue="inputDate1" @change="fetchBattleRecordsByDate"
+          <a-date-picker v-model:value="inputDate1" :defaultValue="inputDate1" @change="fetchBattleRecordsByDate" 
             valueFormat="YYYY/MM/DD" format="YYYY/MM/DD" :disabled-date="disabledDate" />
           <n-button size="small" :disabled="loading1" @click="handleRefresh1" class="action-btn refresh-btn">
             <template #icon>
@@ -44,18 +44,15 @@
                 <Refresh />
               </n-icon>
             </template>刷新</n-button>
-          <n-button type="primary" size="small" :disabled="!battleRecords1 || loading1" @click="handleExport1"
-            class="action-btn export-btn">
+          <n-button type="primary" size="small" :disabled="!battleRecords1 || loading1" @click="handleExport1" class="action-btn export-btn">
             <template #icon>
               <n-icon>
                 <Copy />
               </n-icon>
             </template>导出</n-button>
-          <n-button type="info" size="small" :disabled="!battleRecords1 || loading1" @click="hcSort"
-            class="action-btn sort-btn">
+          <n-button type="info" size="small" :disabled="!battleRecords1 || loading1" @click="hcSort" class="action-btn sort-btn">
             红淬排序</n-button>
-          <n-button type="info" size="small" :disabled="!battleRecords1 || loading1" @click="scoreSort"
-            class="action-btn sort-btn">
+          <n-button type="info" size="small" :disabled="!battleRecords1 || loading1" @click="scoreSort" class="action-btn sort-btn" v-if="ScoreShow === 1">
             积分排序</n-button>
         </div>
       </div>
@@ -68,7 +65,7 @@
             <span class="announcement-text">盐场匹配信息实时更新中，请关注最新排名变化</span>
           </div>
         </div>
-
+        
         <!-- 联盟分类标签栏 -->
         <div v-if="battleRecords1 && battleRecords1.legionRankList" class="alliance-tabs-section">
           <div class="alliance-tab" :class="{ active: activeAlliance === '大联盟' }" @click="setActiveAlliance('大联盟')">
@@ -113,7 +110,7 @@
             <div class="table-cell alliance">联盟</div>
             <div class="table-cell avatar">头像</div>
             <div class="table-cell name">名称</div>
-            <div class="table-cell score">积分</div>
+            <div class="table-cell score" v-if="ScoreShow === 1">积分</div>
             <div class="table-cell red-quench">红淬</div>
             <div class="table-cell first-3">前三车头</div>
             <div class="table-cell power">战力</div>
@@ -121,10 +118,11 @@
             <div class="table-cell server">服务区</div>
             <div class="table-cell announcement">公告</div>
           </div>
-
+          
           <!-- 表格数据行 -->
-          <div v-for="(member, index) in filteredLegionList" :key="member.id" class="table-row"
-            :class="getAllianceClass(allianceincludes(member.announcement))">
+          <div v-for="(member, index) in filteredLegionList" :key="member.id" 
+               class="table-row" 
+               :class="getAllianceClass(allianceincludes(member.announcement))">
             <div class="table-cell rank">
               <div class="rank-container">
                 <span v-if="redQuenchRankings[member.id] === 1" class="rank-medal gold"></span>
@@ -142,7 +140,7 @@
               <div v-else class="member-avatar-placeholder">{{ member.name?.charAt(0) || '?' }}</div>
             </div>
             <div class="table-cell name">{{ member.name }}</div>
-            <div class="table-cell score">{{ formatScore(member.sRScore) || 0 }}</div>
+            <div class="table-cell score" v-if="member.sRScore !== -1">{{ formatScore(member.sRScore) || 0 }}</div>
             <div class="table-cell red-quench">{{ member.redQuench || 0 }}</div>
             <div class="table-cell first-3">
               <div class="hero-avatars">
@@ -159,8 +157,7 @@
                     <div class="hero-name">{{ hero.name || '未知' }}</div>
                     <div class="hero-stats">
                       <span class="hero-power">{{ formatPower(hero.power) }}</span>
-                      <span class="hero-redquench" :class="getRedQuenchClass(hero.redQuench)">{{ hero.redQuench
-                      }}红</span>
+                      <span class="hero-redquench" :class="getRedQuenchClass(hero.redQuench)">{{ hero.redQuench }}红</span>
                     </div>
                   </div>
                 </div>
@@ -172,7 +169,7 @@
             <div class="table-cell announcement">{{ member.announcement || '' }}</div>
           </div>
         </div>
-
+        
         <!-- 空状态 -->
         <div v-else-if="!loading1" class="empty-state">
           <n-empty description="暂无盐场匹配数据" size="large">
@@ -185,36 +182,56 @@
         </div>
       </div>
     </div>
-
+    
     <!-- 玩家信息模态框 -->
-    <n-modal v-model:show="showPlayerInfoModal" preset="card" title="对手信息" :style="{ width: '800px' }" :bordered="false"
-      :segmented="{ content: 'soft', footer: 'soft' }" :show-close="false">
+    <n-modal
+      v-model:show="showPlayerInfoModal"
+      preset="card"
+      title="对手信息"
+      :style="{ width: '800px' }"
+      :bordered="false"
+      :segmented="{ content: 'soft', footer: 'soft' }"
+      :show-close="false"
+    >
       <template #header-extra>
         <span v-if="playerInfo" class="player-id">ID: {{ playerInfo.id }}</span>
       </template>
-
+      
       <div v-if="playerInfo" class="player-info-content">
         <div class="player-info-main">
           <n-avatar round :size="60" :src="playerInfo.headImg" class="player-avatar" />
           <div class="player-info-detail">
             <h3>{{ playerInfo.name }}</h3>
             <p>区服: {{ playerInfo.serverName || '未知' }} | 战力: {{ formatPower(playerInfo.power) }}</p>
-            <p>俱乐部: {{ playerInfo.legionName || '无' }} | 红淬: {{ playerInfo.redQuench || 0 }} | 四圣数: {{
-              playerInfo.holyBeast
-              || 0 }}</p>
+            <p>俱乐部: {{ playerInfo.legionName || '无' }} | 红淬: {{ playerInfo.redQuench || 0 }} | 四圣数: {{ playerInfo.holyBeast || 0 }}</p>
             <p>总红数: {{ playerInfo.totalRedCount || 0 }} | 总开孔数: {{ playerInfo.totalHoleCount || 0 }}</p>
           </div>
         </div>
-
+        
         <div class="action-section">
           <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
             <div class="fight-count-container">
               <label for="fightCount" class="fight-count-label">切磋次数:</label>
-              <n-input id="fightCount" v-model:value="fightCount" type="number" placeholder="请输入切磋次数" min="1" max="100"
-                :step="1" class="fight-count-input" size="small" @input="validateFightCount" />
+              <n-input
+                id="fightCount"
+                v-model:value="fightCount"
+                type="number"
+                placeholder="请输入切磋次数"
+                min="1"
+                max="100"
+                :step="1"
+                class="fight-count-input"
+                size="small"
+                @input="validateFightCount"
+              />
               <div class="fight-count-hint">范围: 1-100</div>
             </div>
-            <n-button type="tertiary" @click="showPlayerInfoModal = false" size="small" style="margin-right: 8px;">
+            <n-button 
+              type="tertiary" 
+              @click="showPlayerInfoModal = false" 
+              size="small"
+              style="margin-right: 8px;"
+            >
               关闭
             </n-button>
           </div>
@@ -222,7 +239,7 @@
             切磋
           </n-button>
         </div>
-
+        
         <!-- 切磋进度和结果 -->
         <div v-if="fightProgress.visible" class="fight-progress">
           <div class="progress-info">
@@ -235,10 +252,15 @@
               <span>负: {{ fightProgress.lossCount }}</span>
             </div>
           </div>
-          <n-progress type="line" :percentage="fightProgress.percentage" :show-indicator="false" :stroke-width="8"
-            status="processing" />
+          <n-progress
+            type="line"
+            :percentage="fightProgress.percentage"
+            :show-indicator="false"
+            :stroke-width="8"
+            status="processing"
+          />
         </div>
-
+        
         <!-- 最终结果统计 -->
         <div v-if="fightResult.visible" class="fight-result">
           <!-- 结果标题和统计信息 -->
@@ -259,35 +281,33 @@
               </div>
               <div class="summary-item">
                 <span class="summary-label">胜率：</span>
-                <span class="summary-value">{{ ((fightResult.winCount / fightResult.totalCount) * 100).toFixed(2)
-                }}%</span>
+                <span class="summary-value">{{ ((fightResult.winCount / fightResult.totalCount) * 100).toFixed(2) }}%</span>
               </div>
               <div class="summary-item">
                 <span class="summary-label">我方掉将率：</span>
-                <span class="summary-value">{{ ((dieStats.ourDieHeroGameCount / fightResult.totalCount) *
-                  100).toFixed(2)
-                }}%</span>
+                <span class="summary-value">{{ ((dieStats.ourDieHeroGameCount / fightResult.totalCount) * 100).toFixed(2) }}%</span>
               </div>
               <div class="summary-item">
                 <span class="summary-label">敌方掉将率：</span>
-                <span class="summary-value">{{ ((dieStats.enemyDieHeroGameCount / fightResult.totalCount) *
-                  100).toFixed(2)
-                }}%</span>
+                <span class="summary-value">{{ ((dieStats.enemyDieHeroGameCount / fightResult.totalCount) * 100).toFixed(2) }}%</span>
               </div>
             </div>
           </div>
-
+          
           <!-- 战斗结果列表 -->
           <div class="result-list">
-            <div v-for="(battle, index) in fightResult.resultCount" :key="index"
-              :class="['battle-result-item', battle.isWin ? 'win' : 'loss']">
+            <div 
+              v-for="(battle, index) in fightResult.resultCount" 
+              :key="index" 
+              :class="['battle-result-item', battle.isWin ? 'win' : 'loss']"
+            >
               <div class="battle-header">
                 <span class="battle-index">第 {{ index + 1 }} 场</span>
                 <n-tag :type="battle.isWin ? 'success' : 'error'" size="small">
                   {{ battle.isWin ? '胜利' : '失败' }}
                 </n-tag>
               </div>
-
+              
               <div class="battle-details">
                 <div class="battle-side left-side">
                   <n-avatar round :size="32" :src="battle.leftheadImg" class="side-avatar" />
@@ -297,9 +317,9 @@
                     <span class="side-die">掉将: {{ battle.leftDieHero }} 个</span>
                   </div>
                 </div>
-
+                
                 <div class="battle-vs">VS</div>
-
+                
                 <div class="battle-side right-side">
                   <n-avatar round :size="32" :src="battle.rightheadImg" class="side-avatar" />
                   <div class="side-info">
@@ -311,13 +331,13 @@
               </div>
             </div>
           </div>
-
+          
           <div class="result-actions">
             <n-button type="primary" @click="resetFightResult">重新切磋</n-button>
             <n-button @click="fightResult.visible = false">关闭结果</n-button>
           </div>
         </div>
-
+        
         <div class="player-heroes">
           <h4>武将阵容</h4>
           <!-- 添加调试信息 -->
@@ -325,8 +345,7 @@
             武将数量: {{ playerInfo.heroList.length }}
           </div>
           <div class="hero-list" v-if="playerInfo.heroList && playerInfo.heroList.length > 0">
-            <div v-for="(hero, index) in playerInfo.heroList" :key="hero.heroId || index" class="hero-item"
-              @click="selectHeroInfo(hero)">
+            <div v-for="(hero, index) in playerInfo.heroList" :key="hero.heroId || index" class="hero-item" @click="selectHeroInfo(hero)">
               <n-avatar round :size="40" :src="hero.heroAvate" style="cursor: pointer;" />
               <div class="hero-info">
                 <span class="hero-name">{{ hero.heroName }}</span>
@@ -354,17 +373,26 @@
           </div>
         </div>
       </div>
-
+      
 
     </n-modal>
-
+    
     <!-- 武将详情模态框 -->
-    <n-modal v-model:show="showHeroModal" class="hero-detail-modal" preset="card" title="武将信息" size="large"
-      :bordered="false" :segmented="{ content: 'soft', footer: 'soft' }" :style="{ width: '600px' }" :show-close="true">
+    <n-modal
+      v-model:show="showHeroModal"
+      class="hero-detail-modal"
+      preset="card"
+      title="武将信息"
+      size="large"
+      :bordered="false"
+      :segmented="{ content: 'soft', footer: 'soft' }"
+      :style="{ width: '600px' }"
+      :show-close="true"
+    >
       <template #header-extra>
         <span class="hero-id">武将ID: {{ heroModealTemp?.heroId }}</span>
       </template>
-
+      
       <div v-if="heroModealTemp" class="hero-modal-content">
         <div class="hero-modal-header">
           <div class="hero-modal-avatar">
@@ -383,7 +411,7 @@
             </div>
           </div>
         </div>
-
+        
         <div class="hero-modal-details">
           <n-descriptions label-placement="left" column="3" bordered>
             <n-descriptions-item label="战力">
@@ -405,59 +433,76 @@
               {{ heroModealTemp.HolyBeast ? '已激活' : '未激活' }}
             </n-descriptions-item>
             <n-descriptions-item label="鱼灵">
-              {{ heroModealTemp?.PearlInfo?.FishInfo?.name != undefined ? heroModealTemp.PearlInfo?.FishInfo?.name : '无'
-              }}
+              {{ heroModealTemp?.PearlInfo?.FishInfo?.name != undefined ? heroModealTemp.PearlInfo?.FishInfo?.name : '无' }}
             </n-descriptions-item>
             <n-descriptions-item label="鱼灵洗练">
               <div v-if="heroModealTemp?.PearlInfo?.slotMap?.length > 0">
-                <div v-for="item in heroModealTemp.PearlInfo.slotMap" :key="item.id" class="ModalEquipment"
-                  :style="'background-color:' + item.value"></div>
+                <div 
+                  v-for="item in heroModealTemp.PearlInfo.slotMap" 
+                  :key="item.id"
+                  class="ModalEquipment"
+                  :style="'background-color:' + item.value"
+                ></div>
               </div>
               <div v-else>无</div>
             </n-descriptions-item>
             <n-descriptions-item label="鱼珠技能">
-              {{ heroModealTemp?.PearlInfo?.PearlSkill?.name != undefined ? heroModealTemp.PearlInfo?.PearlSkill?.name :
-                '无'
-              }}
+              {{ heroModealTemp?.PearlInfo?.PearlSkill?.name != undefined ? heroModealTemp.PearlInfo?.PearlSkill?.name : '无' }}
             </n-descriptions-item>
           </n-descriptions>
         </div>
-
+        
         <div class="hero-modal-equipment">
           <h4 class="section-title">装备详情</h4>
           <div class="equipment-grid">
             <div class="equipment-item">
               <span class="equipment-label">武器:</span>
               <div class="equipment-slots">
-                <div v-for="(item, idx) in Object.values(Object.values(heroModealTemp.equipment)[0]?.quenches || {})"
-                  :key="idx" class="equipment-slot" :class="{ 'red-slot': item.colorId === 6 }"></div>
+                <div 
+                  v-for="(item, idx) in Object.values(Object.values(heroModealTemp.equipment)[0]?.quenches || {})" 
+                  :key="idx" 
+                  class="equipment-slot"
+                  :class="{ 'red-slot': item.colorId === 6 }"
+                ></div>
               </div>
             </div>
             <div class="equipment-item">
               <span class="equipment-label">衣服:</span>
               <div class="equipment-slots">
-                <div v-for="(item, idx) in Object.values(Object.values(heroModealTemp.equipment)[1]?.quenches || {})"
-                  :key="idx" class="equipment-slot" :class="{ 'red-slot': item.colorId === 6 }"></div>
+                <div 
+                  v-for="(item, idx) in Object.values(Object.values(heroModealTemp.equipment)[1]?.quenches || {})" 
+                  :key="idx" 
+                  class="equipment-slot"
+                  :class="{ 'red-slot': item.colorId === 6 }"
+                ></div>
               </div>
             </div>
             <div class="equipment-item">
               <span class="equipment-label">头盔:</span>
               <div class="equipment-slots">
-                <div v-for="(item, idx) in Object.values(Object.values(heroModealTemp.equipment)[2]?.quenches || {})"
-                  :key="idx" class="equipment-slot" :class="{ 'red-slot': item.colorId === 6 }"></div>
+                <div 
+                  v-for="(item, idx) in Object.values(Object.values(heroModealTemp.equipment)[2]?.quenches || {})" 
+                  :key="idx" 
+                  class="equipment-slot"
+                  :class="{ 'red-slot': item.colorId === 6 }"
+                ></div>
               </div>
             </div>
             <div class="equipment-item">
               <span class="equipment-label">坐骑:</span>
               <div class="equipment-slots">
-                <div v-for="(item, idx) in Object.values(Object.values(heroModealTemp.equipment)[3]?.quenches || {})"
-                  :key="idx" class="equipment-slot" :class="{ 'red-slot': item.colorId === 6 }"></div>
+                <div 
+                  v-for="(item, idx) in Object.values(Object.values(heroModealTemp.equipment)[3]?.quenches || {})" 
+                  :key="idx" 
+                  class="equipment-slot"
+                  :class="{ 'red-slot': item.colorId === 6 }"
+                ></div>
               </div>
             </div>
           </div>
         </div>
       </div>
-
+      
       <template #footer>
         <n-button @click="showHeroModal = false">关闭</n-button>
       </template>
@@ -489,6 +534,8 @@ import {
 } from '@/utils/clubBattleUtils'
 import { gettoday, formatWarrankRecordsForExport, allianceincludes } from '@/utils/clubWarrankUtils'
 import { HERO_DICT, HeroFillInfo } from '@/utils/HeroList'
+
+const ScoreShow = ref(1);
 
 const props = defineProps({
   visible: {
@@ -599,11 +646,11 @@ const getHeroInfo = (heroObj) => {
   let redCount = 0;
   let holeCount = 0;
   let heroList = [];
-
+  
   try {
     // 检查英雄数据结构，确保可以遍历
     let heroesToProcess = [];
-
+    
     if (Array.isArray(heroObj)) {
       // 如果是数组，直接使用
       heroesToProcess = heroObj;
@@ -614,22 +661,22 @@ const getHeroInfo = (heroObj) => {
       console.error('英雄数据格式错误:', typeof heroObj);
       return { redCount, holeCount, heroList };
     }
-
+    
     console.log('待处理的英雄数量:', heroesToProcess.length);
-
+    
     heroesToProcess.forEach((hero, index) => {
       console.log(`处理第 ${index + 1} 个英雄:`, hero);
-
+      
       // 跳过无效英雄数据
       if (!hero) return;
-
+      
       let heroInfo = HERO_DICT[hero.heroId] || {};
       let equipmentInfo = hero.equipment ? getEquipment(hero.equipment) : { redCount: 0, holeCount: 0 };
-
+      
       // 检查英雄基本信息
       const heroId = hero.heroId || `unknown_${index}`;
       const heroName = hero.heroName || heroInfo.name || `未知武将_${index}`;
-
+      
       let tempObj = {
         heroId: heroId, //英雄ID
         artifactId: hero.artifactId || '', //英雄装备ID，用于匹配鱼灵信息
@@ -647,7 +694,7 @@ const getHeroInfo = (heroObj) => {
         attributeList: hero.attributeList || [],
         battleTeamSlot: hero.battleTeamSlot,   //阵容站位
       };
-
+      
       // 只添加有效的英雄
       if (heroId && heroName) {
         redCount += tempObj.red;
@@ -656,9 +703,9 @@ const getHeroInfo = (heroObj) => {
         console.log(`添加英雄: ${tempObj.heroName}, 战力: ${tempObj.power}, 红数: ${tempObj.red}, 开孔数: ${tempObj.hole}`);
       }
     });
-
+    
     console.log('处理完成的英雄列表:', heroList);
-
+    
   } catch (error) {
     console.error('处理英雄信息时发生错误:', error);
     heroList = [];
@@ -700,21 +747,21 @@ const fetchTargetInfo = async (roleId) => {
         includeHeroDetail: true,
         includePearl: true
       }, 5000)
-
+    
     // 调试信息
     console.log('rank_getroleinfo API返回结果:', result)
-
+    
     if (!result.roleInfo) {
       message.warning('未查询到对手信息')
       console.log('未查询到roleInfo')
       return
     }
-
+    
     // 构建玩家信息对象
     console.log('构建玩家信息 - result.roleInfo:', result.roleInfo)
     console.log('构建玩家信息 - result.roleInfo.heroes:', result.roleInfo.heroes)
     console.log('构建玩家信息 - result.legionInfo:', result.legionInfo)
-
+    
     // 检查英雄数据类型和结构
     console.log('英雄数据类型:', typeof result.roleInfo.heroes)
     if (result.roleInfo.heroes) {
@@ -722,11 +769,11 @@ const fetchTargetInfo = async (roleId) => {
       console.log('英雄数据是否为对象:', typeof result.roleInfo.heroes === 'object')
       console.log('英雄数据键名:', Object.keys(result.roleInfo.heroes))
     }
-
+    
     // 处理鱼灵信息
     const fishInfo = HeroFillInfo(result.roleInfo);
     console.log('处理后的鱼灵信息:', fishInfo)
-
+    
     // 获取英雄信息
     let heroAndholdAndRed = { redCount: 0, holeCount: 0, heroList: [] };
     if (result.roleInfo.heroes) {
@@ -738,29 +785,29 @@ const fetchTargetInfo = async (roleId) => {
         heroAndholdAndRed = { redCount: 0, holeCount: 0, heroList: [] };
       }
     }
-
+    
     // 将鱼灵信息添加到英雄列表中
     heroAndholdAndRed.heroList.forEach(hero => {
       hero.PearlInfo = fishInfo[hero.artifactId] || {};
     });
-
+    
     // 调试英雄列表
     console.log('最终英雄列表:', heroAndholdAndRed.heroList)
     console.log('英雄列表长度:', heroAndholdAndRed.heroList.length)
-
+    
     // 计算总红数和总开孔数
     const totalRedCount = heroAndholdAndRed.redCount;
     const totalHoleCount = heroAndholdAndRed.holeCount;
-
+    
     // 从角色信息中获取红淬数据
     const roleRedQuench = result.roleInfo.red || 0;
     const roleMaxRed = result.roleInfo.maxRed || 0;
-
+    
     // 从俱乐部信息中获取红淬数据（如果有）
     const legionRedQuench = result.legionInfo?.statistics?.['battle:red:quench'] || roleRedQuench;
     const legionMaxRed = result.legionInfo?.statistics?.['red:quench'] || roleMaxRed;
     const legionMaxPower = result.legionInfo?.statistics?.['max:power'] || result.roleInfo.maxPower || 0;
-
+    
     const playerData = {
       id: roleId,
       name: result.roleInfo.name,
@@ -787,16 +834,16 @@ const fetchTargetInfo = async (roleId) => {
       // 英雄列表
       heroList: heroAndholdAndRed.heroList
     }
-
+    
     console.log('构建完成的玩家数据:', playerData)
-
+    
     // 更新状态并显示模态框
     playerInfo.value = playerData
     console.log('设置playerInfo后的值:', playerInfo.value)
-
+    
     showPlayerInfoModal.value = true
     console.log('设置showPlayerInfoModal后的值:', showPlayerInfoModal.value)
-
+    
     message.success('查询成功')
   } catch (error) {
     message.error(`查询失败: ${error.message}`)
@@ -859,33 +906,33 @@ const calculateFinalResult = (winCount, lossCount, resultCount) => {
 // 切磋功能处理 - 支持连续切磋
 const handleDuel = async () => {
   if (!playerInfo.value) return
-
+  
   // 验证切磋次数
   validateFightCount(fightCount.value)
   if (!isFightCountValid.value) {
     message.error('请输入有效的切磋次数 (1-100)')
     return
   }
-
+  
   const totalCount = parseInt(fightCount.value)
   message.info(`开始连续切磋: ${playerInfo.value.name}，共${totalCount}次`)
-
+  
   if (!tokenStore.selectedToken) {
     message.warning('请先选择游戏角色')
     return
   }
-
+  
   const tokenId = tokenStore.selectedToken.id
-
+  
   // 检查WebSocket连接
   const wsStatus = tokenStore.getWebSocketStatus(tokenId)
   if (wsStatus !== 'connected') {
     message.error('WebSocket未连接，无法发起切磋')
     return
   }
-
+  
   queryLoading.value = true
-
+  
   // 初始化切磋进度
   fightProgress.visible = true
   fightProgress.totalCount = totalCount
@@ -894,39 +941,39 @@ const handleDuel = async () => {
   fightProgress.winCount = 0
   fightProgress.lossCount = 0
   fightProgress.percentage = 0
-
+  
   // 重置掉将统计
   dieStats.ourDieHeroGameCount = 0
   dieStats.enemyDieHeroGameCount = 0
-
+  
   // 重置历史记录
   fightHistory.value = []
-
+  
   try {
     let winCount = 0
     let lossCount = 0
     let resultCount = [] // 存储每场战斗的详细结果
-
+    
     // 重置掉将统计
     dieStats.ourDieHeroGameCount = 0
     dieStats.enemyDieHeroGameCount = 0
-
+    
     // 执行连续切磋
     for (let i = 0; i < totalCount; i++) {
       message.info(`正在进行第 ${i + 1}/${totalCount} 场切磋`)
-
+      
       // 调用实际的切磋API
       const result = await tokenStore.sendMessageWithPromise(tokenId, 'fight_startpvp', {
         targetId: playerInfo.value.id
       }, 10000)
-
+      
       console.log(`第 ${i + 1} 场切磋结果:`, result)
-
+      
       if (result && result.battleData) {
         // 处理掉将情况
         let leftCount = 0;
         let rightCount = 0;
-
+        
         // 检查我方掉将情况
         if (result.battleData.result?.sponsor?.teamInfo) {
           result.battleData.result.sponsor.teamInfo.forEach(item => {
@@ -935,7 +982,7 @@ const handleDuel = async () => {
             }
           });
         }
-
+        
         // 检查敌方掉将情况
         if (result.battleData.result?.accept?.teamInfo) {
           result.battleData.result.accept.teamInfo.forEach(item => {
@@ -944,7 +991,7 @@ const handleDuel = async () => {
             }
           });
         }
-
+        
         // 构建战斗结果对象
         const battleResult = {
           isWin: result.battleData.result?.isWin || false,
@@ -957,10 +1004,10 @@ const handleDuel = async () => {
           rightpower: formatPower(result.battleData.rightTeam?.power || 0),
           rightDieHero: rightCount
         };
-
+        
         // 保存到结果数组
         resultCount.push(battleResult)
-
+        
         // 更新掉将统计
         if (leftCount > 0) {
           dieStats.ourDieHeroGameCount++
@@ -968,22 +1015,22 @@ const handleDuel = async () => {
         if (rightCount > 0) {
           dieStats.enemyDieHeroGameCount++
         }
-
+        
         // 更新胜负计数
         if (battleResult.isWin) {
           winCount++
         } else {
           lossCount++
         }
-
+        
         // 更新切磋进度
         updateFightProgress(i + 1, winCount, lossCount)
-
+        
         // 短暂延迟，避免请求过于频繁
         if (i < totalCount - 1) {
           await new Promise(resolve => setTimeout(resolve, 500))
         }
-
+        
       } else {
         // 单场切磋失败，继续下一场
         message.warning(`第 ${i + 1} 场切磋失败: ${result?.message || '未返回战斗数据'}`)
@@ -991,12 +1038,12 @@ const handleDuel = async () => {
         updateFightProgress(i + 1, winCount, lossCount)
       }
     }
-
+    
     // 所有切磋完成，计算最终结果
     calculateFinalResult(winCount, lossCount, resultCount)
-
+    
     message.success(`连续切磋完成，共${totalCount}场`)
-
+    
   } catch (error) {
     console.error('连续切磋失败:', error)
     message.error(`连续切磋失败: ${error.message || '网络错误'}`)
@@ -1012,11 +1059,11 @@ const filteredLegionList = computed(() => {
   if (!battleRecords1.value?.legionRankList) {
     return []
   }
-
+  
   if (activeAlliance.value === 'all') {
     return battleRecords1.value.legionRankList
   }
-
+  
   return battleRecords1.value.legionRankList.filter(member => {
     const memberAlliance = allianceincludes(member.announcement)
     if (activeAlliance.value === '空白') {
@@ -1029,17 +1076,17 @@ const filteredLegionList = computed(() => {
 // 计算所有俱乐部的红淬排名
 const redQuenchRankings = computed(() => {
   if (!battleRecords1.value?.legionRankList) return {};
-
+  
   // 按红淬数量降序排序所有俱乐部，获取真实排名
   const sortedByRedQuench = [...battleRecords1.value.legionRankList]
     .sort((a, b) => (b.redQuench || 0) - (a.redQuench || 0));
-
+  
   // 创建俱乐部ID到红淬排名的映射（1-based）
   const rankMap = {};
   sortedByRedQuench.forEach((club, index) => {
     rankMap[club.id] = index + 1;
   });
-
+  
   return rankMap;
 });
 
@@ -1053,7 +1100,7 @@ const getActiveAllianceCount = (alliance) => {
   if (!battleRecords1.value?.legionRankList) {
     return 0
   }
-
+  
   return battleRecords1.value.legionRankList.filter(member => {
     const memberAlliance = allianceincludes(member.announcement)
     if (alliance === '空白') {
@@ -1091,7 +1138,7 @@ const disabledDate = current => {
 
 // 联盟样式类
 const getAllianceClass = (alliance) => {
-  switch (alliance) {
+  switch(alliance) {
     case '大联盟':
       return 'alliance-large';
     case '梦盟':
@@ -1171,6 +1218,7 @@ const fetchBattleRecords1 = async () => {
         message.warning('未查询到盐场匹配数据');
         return;
       }
+      ScoreShow.value = 1;
       const detailPromises = result.opponentList.map(async (club) => {
         try {
           const detail = await tokenStore.sendMessageWithPromise(
@@ -1180,24 +1228,24 @@ const fetchBattleRecords1 = async () => {
             5000
           );
           if (!detail) {
-            return {
-              ...club,
-              redQuench: 0,
-              power: 0,
-              announcement: '未知',
-              redno: 0,
-              redno1: '0红',
-              redno2: '0红',
-              redno3: '0红',
-              hb1: 0,
-              hb2: 0,
-              hb3: 0,
-              topHeroes: [],
-              level: 30
-            };
-          }
+        return {
+          ...club,
+          redQuench: 0,
+          power: 0,
+          announcement: '未知',
+          redno: 0,
+          redno1: '0红',
+          redno2: '0红',
+          redno3: '0红',
+          hb1: 0,
+          hb2: 0,
+          hb3: 0,
+          topHeroes: [],
+          level: 30
+        };
+      }
           const topHeroes = [];
-
+          
           for (const [roleId, memberData] of Object.entries(detail?.legionData?.members)) {
             const tempRoleInfo = await tokenStore.sendMessageWithPromise(tokenId, 'rank_getroleinfo',
               {
@@ -1206,14 +1254,14 @@ const fetchBattleRecords1 = async () => {
                 isSearch: false,
                 roleId: roleId
               }, 5000)
-
+            
             let holyBeast = 0;
             for (const [heroId, heroData] of Object.entries(tempRoleInfo?.roleInfo?.heroes)) {
               if (heroData.hB?.active !== undefined) {
                 holyBeast++;
               }
             }
-
+            
             topHeroes.push({
               id: roleId,
               name: memberData.name || memberData.custom?.name || '未知',
@@ -1223,16 +1271,16 @@ const fetchBattleRecords1 = async () => {
               holyBeast: holyBeast
             });
           }
-
+          
           // 按红淬数量降序排序，取前三
           topHeroes.sort((a, b) => b.redQuench - a.redQuench);
           const top3Heroes = topHeroes.slice(0, 3);
-
+          
           // 提取红淬数量数组
           const redQuenchCounts = top3Heroes.map(hero => hero.redQuench + '红');
           // 提取圣物数量数组
           const HolyBeastNum = top3Heroes.map(hero => hero.holyBeast);
-
+          
           return {
             ...club,
             redQuench: detail?.legionData?.quenchNum || 0,
@@ -1268,20 +1316,20 @@ const fetchBattleRecords1 = async () => {
         }
       });
       const processedClubs = await Promise.all(detailPromises);
-
+      
       // 1. 为每个俱乐部添加联盟信息
       const clubsWithAlliance = processedClubs.map(club => ({
         ...club,
         alliance: allianceincludes(club.announcement)
       }));
-
+      
       // 2. 统计每个联盟的俱乐部数量
       const allianceStats = {};
       clubsWithAlliance.forEach(club => {
         const alliance = club.alliance;
         allianceStats[alliance] = (allianceStats[alliance] || 0) + 1;
       });
-
+      
       // 3. 找出联盟数量最多的联盟
       let maxAlliance = '';
       let maxCount = 0;
@@ -1291,7 +1339,7 @@ const fetchBattleRecords1 = async () => {
           maxAlliance = alliance;
         }
       }
-
+      
       // 4. 按照联盟分组，并优先显示数量最多的联盟
       // 先将所有俱乐部按联盟分组
       const allianceGroups = {};
@@ -1302,27 +1350,27 @@ const fetchBattleRecords1 = async () => {
         }
         allianceGroups[alliance].push(club);
       });
-
+      
       // 5. 在每个联盟内部按照红粹数从高到低排序
       for (const alliance in allianceGroups) {
         allianceGroups[alliance].sort((a, b) => (b.redQuench || 0) - (a.redQuench || 0));
       }
-
+      
       // 6. 构建最终排序后的列表：先显示最大联盟，然后按联盟名称排序
       const sortedLegionList = [];
-
+      
       // 先添加最大联盟的俱乐部
       if (maxAlliance && allianceGroups[maxAlliance]) {
         sortedLegionList.push(...allianceGroups[maxAlliance]);
         delete allianceGroups[maxAlliance];
       }
-
+      
       // 然后添加其他联盟的俱乐部，按联盟名称排序
       const otherAlliances = Object.keys(allianceGroups).sort();
       for (const alliance of otherAlliances) {
         sortedLegionList.push(...allianceGroups[alliance]);
       }
-
+      
       battleRecords1.value = {
         ...result,
         legionRankList: sortedLegionList
@@ -1351,6 +1399,7 @@ const fetchBattleRecords1 = async () => {
         message.warning('未查询到盐场匹配数据');
         return;
       }
+      ScoreShow.value = 0;
       const detailPromises = result.legionRankList.map(async (club) => {
         try {
           const detail = await tokenStore.sendMessageWithPromise(
@@ -1378,7 +1427,7 @@ const fetchBattleRecords1 = async () => {
             };
           }
           const topHeroes = [];
-
+          
           for (const [roleId, memberData] of Object.entries(detail?.legionData?.members)) {
             const tempRoleInfo = await tokenStore.sendMessageWithPromise(tokenId, 'rank_getroleinfo',
               {
@@ -1387,14 +1436,14 @@ const fetchBattleRecords1 = async () => {
                 isSearch: false,
                 roleId: roleId
               }, 5000)
-
+            
             let holyBeast = 0;
             for (const [heroId, heroData] of Object.entries(tempRoleInfo?.roleInfo?.heroes)) {
               if (heroData.hB?.active !== undefined) {
                 holyBeast++;
               }
             }
-
+            
             topHeroes.push({
               id: roleId,
               name: memberData.name || memberData.custom?.name || '未知',
@@ -1404,16 +1453,16 @@ const fetchBattleRecords1 = async () => {
               holyBeast: holyBeast
             });
           }
-
+          
           // 按红淬数量降序排序，取前三
           topHeroes.sort((a, b) => b.redQuench - a.redQuench);
           const top3Heroes = topHeroes.slice(0, 3);
-
+          
           // 提取红淬数量数组
           const redQuenchCounts = top3Heroes.map(hero => hero.redQuench + '红');
           // 提取圣物数量数组
           const HolyBeastNum = top3Heroes.map(hero => hero.holyBeast);
-
+          
           return {
             ...club,
             redQuench: detail?.legionData?.quenchNum || 0,
@@ -1449,20 +1498,20 @@ const fetchBattleRecords1 = async () => {
         }
       });
       const processedClubs = await Promise.all(detailPromises);
-
+      
       // 1. 为每个俱乐部添加联盟信息
       const clubsWithAlliance = processedClubs.map(club => ({
         ...club,
         alliance: allianceincludes(club.announcement)
       }));
-
+      
       // 2. 统计每个联盟的俱乐部数量
       const allianceStats = {};
       clubsWithAlliance.forEach(club => {
         const alliance = club.alliance;
         allianceStats[alliance] = (allianceStats[alliance] || 0) + 1;
       });
-
+      
       // 3. 找出联盟数量最多的联盟
       let maxAlliance = '';
       let maxCount = 0;
@@ -1472,7 +1521,7 @@ const fetchBattleRecords1 = async () => {
           maxAlliance = alliance;
         }
       }
-
+      
       // 4. 按照联盟分组，并优先显示数量最多的联盟
       // 先将所有俱乐部按联盟分组
       const allianceGroups = {};
@@ -1483,27 +1532,27 @@ const fetchBattleRecords1 = async () => {
         }
         allianceGroups[alliance].push(club);
       });
-
+      
       // 5. 在每个联盟内部按照红粹数从高到低排序
       for (const alliance in allianceGroups) {
         allianceGroups[alliance].sort((a, b) => (b.redQuench || 0) - (a.redQuench || 0));
       }
-
+      
       // 6. 构建最终排序后的列表：先显示最大联盟，然后按联盟名称排序
       const sortedLegionList = [];
-
+      
       // 先添加最大联盟的俱乐部
       if (maxAlliance && allianceGroups[maxAlliance]) {
         sortedLegionList.push(...allianceGroups[maxAlliance]);
         delete allianceGroups[maxAlliance];
       }
-
+      
       // 然后添加其他联盟的俱乐部，按联盟名称排序
       const otherAlliances = Object.keys(allianceGroups).sort();
       for (const alliance of otherAlliances) {
         sortedLegionList.push(...allianceGroups[alliance]);
       }
-
+      
       battleRecords1.value = {
         ...result,
         legionRankList: sortedLegionList
@@ -1568,14 +1617,14 @@ const exportToImage = async () => {
     // 保存原始样式
     const originalHeight = exportDom.value.style.height;
     const originalOverflow = exportDom.value.style.overflow;
-
+    
     // 临时调整表格容器高度，确保所有内容可见
     exportDom.value.style.height = "auto";
     exportDom.value.style.overflow = "visible";
-
+    
     // 等待DOM更新
     await new Promise(resolve => setTimeout(resolve, 100));
-
+    
     // 5. 用html2canvas渲染DOM为Canvas
     const canvas = await html2canvas(exportDom.value, {
       scale: 2, // 放大2倍，解决图片模糊问题
@@ -1786,14 +1835,14 @@ onMounted(() => {
   .hero-modal-content {
     padding: 20px 0;
   }
-
+  
   .hero-modal-header {
     display: flex;
     align-items: center;
     gap: 20px;
     margin-bottom: 20px;
   }
-
+  
   .hero-modal-avatar {
     width: 100px;
     height: 100px;
@@ -1804,37 +1853,37 @@ onMounted(() => {
     justify-content: center;
     overflow: hidden;
     border: 2px solid var(--border-light);
-
+    
     img {
       width: 100%;
       height: 100%;
       object-fit: cover;
     }
-
+    
     .hero-placeholder {
       font-size: 36px;
       font-weight: var(--font-weight-bold);
       color: var(--text-secondary);
     }
   }
-
+  
   .hero-modal-basic {
     flex: 1;
   }
-
+  
   .hero-modal-name {
     margin: 0 0 10px 0;
     font-size: var(--font-size-lg);
     font-weight: var(--font-weight-bold);
   }
-
+  
   .hero-modal-stats {
     display: flex;
     align-items: center;
     gap: 15px;
     font-size: var(--font-size-sm);
     color: var(--text-secondary);
-
+    
     .stat-item {
       padding: 4px 8px;
       background: var(--bg-secondary);
@@ -1842,58 +1891,58 @@ onMounted(() => {
       border: 1px solid var(--border-light);
     }
   }
-
+  
   .hero-modal-details {
     margin-bottom: 20px;
-
+    
     :deep(.n-descriptions) {
       font-size: var(--font-size-sm);
-
+      
       .n-descriptions-item-label {
         font-weight: var(--font-weight-medium);
         color: var(--text-primary);
       }
-
+      
       .n-descriptions-item-content {
         color: var(--text-secondary);
       }
     }
   }
-
+  
   .hero-modal-equipment {
     margin-top: 20px;
   }
-
+  
   .section-title {
     margin: 0 0 15px 0;
     font-size: var(--font-size-base);
     font-weight: var(--font-weight-bold);
   }
-
+  
   .equipment-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 15px;
   }
-
+  
   .equipment-item {
     display: flex;
     align-items: center;
     gap: 10px;
   }
-
+  
   .equipment-label {
     font-size: var(--font-size-sm);
     color: var(--text-primary);
     font-weight: var(--font-weight-medium);
     width: 60px;
   }
-
+  
   .equipment-slots {
     display: flex;
     gap: 6px;
   }
-
+  
   .equipment-slot {
     width: 20px;
     height: 20px;
@@ -1901,12 +1950,12 @@ onMounted(() => {
     border-radius: var(--border-radius-sm);
     background: var(--bg-secondary);
   }
-
+  
   .equipment-slot.red-slot {
     background: var(--error-color);
     border-color: var(--error-color);
   }
-
+  
   /* 鱼灵洗练颜色块 */
   .ModalEquipment {
     width: 16px;
@@ -1924,12 +1973,12 @@ onMounted(() => {
     :deep(.n-modal-content) {
       padding: 0 !important;
     }
-
+    
     .hero-modal-header {
       flex-direction: column;
       text-align: center;
     }
-
+    
     .equipment-grid {
       grid-template-columns: 1fr;
     }
@@ -2083,21 +2132,21 @@ onMounted(() => {
     align-items: flex-start;
     gap: 10px;
   }
-
+  
   .result-summary {
     gap: 10px;
   }
-
+  
   .battle-details {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
   }
-
+  
   .battle-side {
     width: 100%;
   }
-
+  
   .battle-vs {
     align-self: center;
     margin: 5px 0;
@@ -2130,7 +2179,7 @@ onMounted(() => {
   border-radius: var(--border-radius-sm);
   border: 1px solid var(--border-light);
   transition: all var(--transition-fast);
-
+  
   &:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-sm);
@@ -2231,13 +2280,13 @@ onMounted(() => {
   background: var(--bg-primary);
   border-bottom: 1px solid var(--border-light);
   flex-shrink: 0;
-
+  
   .header-left {
     display: flex;
     align-items: center;
     gap: var(--spacing-md);
   }
-
+  
   .header-icon {
     width: 40px;
     height: 40px;
@@ -2247,7 +2296,7 @@ onMounted(() => {
     padding: var(--spacing-xs);
     box-sizing: border-box;
   }
-
+  
   .header-title {
     h2 {
       margin: 0;
@@ -2255,31 +2304,31 @@ onMounted(() => {
       font-weight: var(--font-weight-bold);
       color: var(--text-primary);
     }
-
+    
     p {
       margin: var(--spacing-xs) 0 0 0;
       font-size: var(--font-size-sm);
       color: var(--text-secondary);
     }
   }
-
+  
   // 数据统计区
   .stats-section {
     display: flex;
     gap: var(--spacing-lg);
     align-items: center;
-
+    
     .stat-item {
       display: flex;
       align-items: center;
       gap: var(--spacing-sm);
-
+      
       .stat-label {
         font-size: var(--font-size-sm);
         color: var(--text-secondary);
         font-weight: var(--font-weight-medium);
       }
-
+      
       :deep(.n-tag) {
         font-size: var(--font-size-sm);
         padding: 4px 8px;
@@ -2297,17 +2346,17 @@ onMounted(() => {
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-light);
   flex-shrink: 0;
-
+  
   .function-left {
     .export-options {
       display: flex;
       align-items: center;
       gap: var(--spacing-sm);
-
+      
       :deep(.n-checkbox-group) {
         display: flex;
         gap: var(--spacing-md);
-
+        
         .n-checkbox {
           font-size: var(--font-size-sm);
           color: var(--text-primary);
@@ -2315,51 +2364,51 @@ onMounted(() => {
       }
     }
   }
-
+  
   .function-right {
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
-
+    
     :deep(.n-date-picker) {
       font-size: var(--font-size-sm);
       width: 200px;
-
+      
       .n-input-wrapper {
         font-size: var(--font-size-sm);
       }
     }
-
+    
     .action-btn {
       font-size: var(--font-size-sm);
       padding: 6px 12px;
       border-radius: var(--border-radius-sm);
       transition: all var(--transition-fast);
-
+      
       &:hover {
         transform: translateY(-1px);
         box-shadow: var(--shadow-medium);
       }
-
+      
       &.refresh-btn {
         background: var(--bg-primary);
         border: 1px solid var(--border-medium);
       }
-
+      
       &.export-btn {
         background: var(--primary-color);
         color: white;
-
+        
         &:hover {
           background: var(--primary-color-hover);
         }
       }
-
+      
       &.sort-btn {
         background: var(--info-color-light);
         color: var(--info-color);
         border: 1px solid var(--info-color);
-
+        
         &:hover {
           background: var(--info-color-hover);
           color: white;
@@ -2377,12 +2426,12 @@ onMounted(() => {
   border-radius: var(--border-radius-md);
   box-shadow: var(--shadow-sm);
   flex-shrink: 0;
-
+  
   .announcement-content {
     display: flex;
     justify-content: center;
     align-items: center;
-
+    
     .announcement-text {
       color: white;
       font-size: var(--font-size-sm);
@@ -2401,7 +2450,7 @@ onMounted(() => {
   padding: var(--spacing-xs);
   gap: var(--spacing-xs);
   flex-shrink: 0;
-
+  
   .alliance-tab {
     flex: 1;
     display: flex;
@@ -2417,43 +2466,43 @@ onMounted(() => {
     transition: all var(--transition-fast);
     background: rgba(255, 255, 255, 0.15);
     border: 1px solid transparent;
-
+    
     &:hover {
       background: rgba(255, 255, 255, 0.25);
       transform: translateY(-1px);
     }
-
+    
     &.active {
       background: white;
       color: var(--primary-color);
       box-shadow: var(--shadow-medium);
       transform: translateY(-2px);
     }
-
+    
     &.all {
       background: rgba(255, 255, 255, 0.2);
-
+      
       &:hover {
         background: rgba(255, 255, 255, 0.3);
       }
-
+      
       &.active {
         background: white;
         color: var(--primary-color);
       }
     }
-
+    
     .tab-text {
       font-size: var(--font-size-sm);
     }
-
+    
     .tab-count {
       font-size: var(--font-size-xs);
       background: rgba(255, 255, 255, 0.3);
       padding: 2px 6px;
       border-radius: 10px;
       font-weight: var(--font-weight-bold);
-
+      
       .alliance-tab.active & {
         background: var(--primary-color);
         color: white;
@@ -2470,7 +2519,7 @@ onMounted(() => {
   flex-direction: column;
   background: var(--bg-primary);
   height: calc(100% - 200px);
-
+  
   // 加载状态
   .loading-state {
     display: flex;
@@ -2479,17 +2528,17 @@ onMounted(() => {
     flex: 1;
     background: var(--bg-primary);
     height: 100%;
-
+    
     :deep(.n-spin) {
       font-size: var(--font-size-lg);
-
+      
       .n-spin-description {
         font-size: var(--font-size-sm);
         color: var(--text-secondary);
       }
     }
   }
-
+  
   // 空状态
   .empty-state {
     display: flex;
@@ -2498,43 +2547,43 @@ onMounted(() => {
     flex: 1;
     background: var(--bg-primary);
     height: 100%;
-
+    
     :deep(.n-empty) {
       font-size: var(--font-size-sm);
-
+      
       .n-empty-description {
         color: var(--text-secondary);
       }
     }
   }
-
+  
   // 表格容器
   .table-container {
     flex: 1;
     overflow: auto;
     background: var(--bg-primary);
     height: 100%;
-
+    
     // 滚动条样式
     ::-webkit-scrollbar {
       width: 8px;
       height: 8px;
     }
-
+    
     ::-webkit-scrollbar-track {
       background: var(--bg-secondary);
       border-radius: var(--border-radius-sm);
     }
-
+    
     ::-webkit-scrollbar-thumb {
       background: var(--border-medium);
       border-radius: var(--border-radius-sm);
-
+      
       &:hover {
         background: var(--border-dark);
       }
     }
-
+    
     // 表格标题行
     .table-header {
       display: flex;
@@ -2548,13 +2597,13 @@ onMounted(() => {
       top: 0;
       z-index: 100;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-
+      
       // 确保所有标题头居中对齐
       .table-cell {
         justify-content: center;
       }
     }
-
+    
     // 表格数据行
     .table-row {
       display: flex;
@@ -2563,55 +2612,55 @@ onMounted(() => {
       border-bottom: 1px solid var(--border-light);
       transition: all var(--transition-fast);
       background: var(--bg-primary);
-
+      
       &:hover {
         background: var(--bg-secondary);
         transform: translateX(2px);
         box-shadow: inset 3px 0 0 var(--primary-color);
       }
-
+      
       &:last-child {
         border-bottom: none;
       }
-
+      
       // 联盟样式类
       &.alliance-large {
         .alliance-tag {
           background: var(--primary-color);
         }
       }
-
+      
       &.alliance-dream {
         .alliance-tag {
           background: var(--success-color);
         }
       }
-
+      
       &.alliance-xin-justice {
         .alliance-tag {
           background: var(--info-color);
         }
       }
-
+      
       &.alliance-dragon {
         .alliance-tag {
           background: var(--error-color);
         }
       }
-
+      
       &.alliance-unknown {
         .alliance-tag {
           background: var(--warning-color);
         }
       }
-
+      
       &.alliance-other {
         .alliance-tag {
           background: var(--text-secondary);
         }
       }
     }
-
+    
     // 表格单元格
     .table-cell {
       display: flex;
@@ -2619,7 +2668,7 @@ onMounted(() => {
       padding: 0 var(--spacing-xs);
       font-size: var(--font-size-sm);
       color: var(--text-primary);
-
+      
       // 单元格宽度分配
       &.rank {
         width: 90px;
@@ -2628,7 +2677,7 @@ onMounted(() => {
         font-weight: var(--font-weight-bold);
         color: var(--text-primary);
         padding: 4px 8px;
-
+        
         .rank-container {
           position: relative;
           display: flex;
@@ -2638,7 +2687,7 @@ onMounted(() => {
           height: 100%;
           padding: 4px 0;
         }
-
+        
         .rank-medal {
           position: relative;
           width: 36px;
@@ -2652,36 +2701,36 @@ onMounted(() => {
           color: white;
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
           margin: 0 6px;
-
+          
           &::before {
             content: attr(data-rank);
           }
-
+          
           &.gold {
             background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-
+            
             &::before {
               content: '1';
             }
           }
-
+          
           &.silver {
             background: linear-gradient(135deg, #C0C0C0 0%, #A9A9A9 100%);
-
+            
             &::before {
               content: '2';
             }
           }
-
+          
           &.bronze {
             background: linear-gradient(135deg, #CD7F32 0%, #B87333 100%);
-
+            
             &::before {
               content: '3';
             }
           }
         }
-
+        
         .rank-number {
           font-size: var(--font-size-base);
           font-weight: var(--font-weight-bold);
@@ -2689,11 +2738,11 @@ onMounted(() => {
           margin: 0 6px;
         }
       }
-
+      
       &.alliance {
         width: 80px;
         min-width: 80px;
-
+      
         .alliance-tag {
           display: inline-block;
           padding: 3px 8px;
@@ -2703,19 +2752,19 @@ onMounted(() => {
           color: white;
           text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
           transition: all var(--transition-fast);
-
+          
           &:hover {
             transform: scale(1.05);
             box-shadow: var(--shadow-medium);
           }
         }
       }
-
+      
       &.avatar {
         width: 50px;
         min-width: 50px;
         justify-content: center;
-
+      
         .member-avatar {
           width: 32px;
           height: 32px;
@@ -2723,14 +2772,14 @@ onMounted(() => {
           object-fit: cover;
           border: 2px solid var(--border-light);
           transition: all var(--transition-fast);
-
+          
           &:hover {
             transform: scale(1.2);
             box-shadow: var(--shadow-medium);
             border-color: var(--primary-color);
           }
         }
-
+        
         .member-avatar-placeholder {
           width: 32px;
           height: 32px;
@@ -2745,7 +2794,7 @@ onMounted(() => {
           border: 2px solid var(--border-light);
         }
       }
-
+      
       &.name {
         width: 120px;
         min-width: 120px;
@@ -2753,7 +2802,7 @@ onMounted(() => {
         color: var(--text-primary);
         font-size: var(--font-size-base);
       }
-
+      
       &.score {
         width: 80px;
         min-width: 80px;
@@ -2763,14 +2812,14 @@ onMounted(() => {
         font-size: var(--font-size-base);
         text-align: center;
       }
-
+      
       &.red-quench {
         width: 80px;
         min-width: 80px;
         justify-content: center;
         font-weight: var(--font-weight-bold);
         text-align: center;
-
+        
         &::before {
           content: '';
           display: inline-block;
@@ -2782,11 +2831,11 @@ onMounted(() => {
           vertical-align: middle;
         }
       }
-
+      
       &.first-3 {
         width: 350px;
         min-width: 405px;
-
+        
         .hero-avatars {
           display: flex;
           gap: var(--spacing-xs);
@@ -2797,7 +2846,7 @@ onMounted(() => {
           padding: var(--spacing-xs) 0;
           overflow: hidden;
         }
-
+        
         .hero-card {
           display: flex;
           flex-direction: column;
@@ -2812,20 +2861,20 @@ onMounted(() => {
           flex: 1;
           max-width: 130px;
           cursor: pointer;
-
+          
           &:hover {
             background: var(--bg-primary);
             transform: translateY(-2px);
             box-shadow: var(--shadow-medium);
             border-color: var(--primary-color);
           }
-
+          
           &:active {
             transform: translateY(0);
             box-shadow: var(--shadow-sm);
           }
         }
-
+        
         /* 覆盖全局hero-stats span样式，确保战力和红数正常显示 */
         .hero-stats span {
           padding: 0;
@@ -2833,7 +2882,7 @@ onMounted(() => {
           border: none;
           border-radius: 0;
         }
-
+        
         .hero-avatar-container {
           position: relative;
           display: flex;
@@ -2842,7 +2891,7 @@ onMounted(() => {
           width: 100%;
           cursor: pointer;
         }
-
+        
         .hero-avatar {
           width: 50px;
           height: 50px;
@@ -2851,17 +2900,17 @@ onMounted(() => {
           border: 2px solid var(--border-light);
           transition: all var(--transition-fast);
           cursor: pointer;
-
+          
           &:hover {
             transform: scale(1.1);
             border-color: var(--primary-color);
           }
-
+          
           &:active {
             transform: scale(0.95);
           }
         }
-
+        
         .hero-avatar-placeholder {
           width: 40px;
           height: 40px;
@@ -2876,17 +2925,17 @@ onMounted(() => {
           border: 2px solid var(--border-light);
           cursor: pointer;
           transition: all var(--transition-fast);
-
+          
           &:hover {
             transform: scale(1.1);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
           }
-
+          
           &:active {
             transform: scale(0.95);
           }
         }
-
+        
         .hero-holy-beast {
           position: absolute;
           right: -5px;
@@ -2903,16 +2952,16 @@ onMounted(() => {
           box-shadow: var(--shadow-sm);
           border: 2px solid var(--bg-primary);
           z-index: 10;
-
+          
           .holy-beast-icon {
             font-size: var(--font-size-sm);
           }
-
+          
           .holy-beast-count {
             font-size: var(--font-size-xs);
           }
         }
-
+        
         .hero-info {
           display: flex;
           flex-direction: column;
@@ -2920,7 +2969,7 @@ onMounted(() => {
           gap: 2px;
           width: 100%;
         }
-
+        
         .hero-name {
           font-size: var(--font-size-xs);
           font-weight: var(--font-weight-medium);
@@ -2931,7 +2980,7 @@ onMounted(() => {
           text-overflow: ellipsis;
           width: 100%;
         }
-
+        
         .hero-stats {
           display: flex;
           flex-direction: row;
@@ -2940,39 +2989,39 @@ onMounted(() => {
           gap: var(--spacing-xs);
           font-size: var(--font-size-xs);
         }
-
+        
         .hero-power,
         .hero-redquench {
           display: inline-block;
         }
-
+        
         .hero-power {
           color: var(--text-primary);
           font-weight: var(--font-weight-medium);
         }
-
+        
         .hero-redquench {
           font-weight: var(--font-weight-bold);
           padding: 1px 6px;
           border-radius: var(--border-radius-full);
-
+          
           &.redquench-high {
             color: var(--error-color);
             background: rgba(var(--error-color-rgb), 0.1);
           }
-
+          
           &.redquench-medium {
             color: var(--warning-color);
             background: rgba(var(--warning-color-rgb), 0.1);
           }
-
+          
           &.redquench-low {
             color: var(--success-color);
             background: rgba(var(--success-color-rgb), 0.1);
           }
         }
       }
-
+      
       &.power {
         width: 100px;
         min-width: 100px;
@@ -2982,19 +3031,19 @@ onMounted(() => {
         font-size: var(--font-size-base);
         text-align: center;
       }
-
+      
       &.level {
         width: 70px;
         min-width: 70px;
         justify-content: center;
-
+        
         &::before {
           content: 'Lv.';
           font-size: var(--font-size-xs);
           color: var(--text-secondary);
           margin-right: 2px;
         }
-
+        
         span {
           display: inline-block;
           padding: 2px 8px;
@@ -3005,7 +3054,7 @@ onMounted(() => {
           font-size: var(--font-size-sm);
         }
       }
-
+      
       &.server {
         width: 80px;
         min-width: 80px;
@@ -3014,7 +3063,7 @@ onMounted(() => {
         font-size: var(--font-size-sm);
         text-align: center;
       }
-
+      
       &.announcement {
         flex: 1;
         min-width: 150px;
@@ -3036,7 +3085,7 @@ onMounted(() => {
   font-size: var(--font-size-sm);
   padding: 6px 12px;
   border-radius: var(--border-radius-sm);
-
+  
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
@@ -3054,18 +3103,18 @@ onMounted(() => {
     flex-direction: column;
     align-items: flex-start;
     gap: var(--spacing-md);
-
+    
     .stats-section {
       width: 100%;
       justify-content: flex-start;
     }
   }
-
+  
   .function-section {
     flex-direction: column;
     align-items: flex-start;
     gap: var(--spacing-md);
-
+    
     .function-right {
       width: 100%;
       justify-content: flex-start;
@@ -3073,98 +3122,95 @@ onMounted(() => {
       gap: var(--spacing-sm);
     }
   }
-
+  
   .alliance-tabs-section {
     overflow-x: auto;
     justify-content: flex-start;
-
+    
     .alliance-tab {
       flex: 0 0 auto;
       white-space: nowrap;
     }
   }
-
+  
   .table-container {
     font-size: var(--font-size-xs);
-
+    
     .table-header {
       padding: var(--spacing-xs) var(--spacing-sm);
     }
-
+    
     .table-row {
       padding: var(--spacing-xs) var(--spacing-sm);
     }
-
+    
     .table-cell {
       padding: 0 var(--spacing-xs);
       font-size: var(--font-size-xs);
-
+      
       &.rank {
         width: 50px;
         min-width: 50px;
       }
-
+      
       &.alliance {
         width: 100px;
         min-width: 100px;
       }
-
+      
       &.avatar {
         width: 50px;
         min-width: 50px;
-
-        .member-avatar,
-        .member-avatar-placeholder {
+        
+        .member-avatar, .member-avatar-placeholder {
           width: 32px;
           height: 32px;
         }
       }
-
+      
       &.name {
         width: 120px;
         min-width: 120px;
       }
-
-      &.score,
-      &.red-quench {
+      
+      &.score, &.red-quench {
         width: 80px;
         min-width: 80px;
       }
-
+      
       &.first-3 {
         width: 350px;
         min-width: 350px;
-
+        
         .hero-card {
           min-width: 80px;
-
+          
           .hero-avatar,
           .hero-avatar-placeholder {
             width: 40px;
             height: 40px;
           }
-
+          
           .hero-name {
             font-size: var(--font-size-xs);
           }
-
+          
           .hero-stats {
             font-size: var(--font-size-xs);
           }
         }
       }
-
+      
       &.power {
         width: 100px;
         min-width: 100px;
       }
-
-      &.level,
-      &.server {
+      
+      &.level, &.server {
         width: 70px;
         min-width: 70px;
       }
-
+      
       &.announcement {
         min-width: 150px;
       }
@@ -3176,19 +3222,19 @@ onMounted(() => {
   .club-warrank-container {
     padding: var(--spacing-xs);
   }
-
+  
   .header-section {
     padding: var(--spacing-md);
   }
-
+  
   .function-section {
     padding: var(--spacing-xs) var(--spacing-md);
   }
-
+  
   .alliance-tabs-section {
     padding: var(--spacing-xs) var(--spacing-xs);
   }
-
+  
   :deep(.n-date-picker) {
     width: 180px !important;
   }
