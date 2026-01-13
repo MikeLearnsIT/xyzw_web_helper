@@ -67,7 +67,7 @@
               <n-avatar src="" size="medium" fallback-src="/icons/xiaoyugan.png" />
               <span class="username">{{
                 selectedToken?.name || "未选择Token"
-                }}</span>
+              }}</span>
               <n-icon>
                 <ChevronDown />
               </n-icon>
@@ -101,12 +101,6 @@
             <Layers />
           </n-icon>
           <span>批量日常</span>
-        </router-link>
-        <router-link to="/admin/batch-tasks" class="drawer-item" @click="isMobileMenuOpen = false">
-          <n-icon>
-            <Layers />
-          </n-icon>
-          <span>批量任务</span>
         </router-link>
         <router-link to="/admin/batch-tasks" class="drawer-item" @click="isMobileMenuOpen = false">
           <n-icon>
