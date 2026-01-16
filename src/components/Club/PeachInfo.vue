@@ -29,13 +29,13 @@
               <div class="club-header">
                 <n-avatar
                   :size="48"
-                  :src="battleInfo.logo || '/icons/xiaoyugan.png'"
+                  :src="battleInfo?.logo || '/icons/xiaoyugan.png'"
                 />
                 <div class="meta">
-                  <div class="name">{{ battleInfo.name }}</div>
+                  <div class="name">{{ battleInfo?.name || '暂无名称' }}</div>
                   <div class="sub">
-                    ID {{ battleInfo.id }} · Lv.{{ battleInfo.level }} · 服务器
-                    {{ battleInfo.serverId }}
+                    ID {{ battleInfo?.id || '0' }} · Lv.{{ battleInfo?.level || '0' }} · 服务器
+                    {{ battleInfo?.serverId || '0' }}
                   </div>
                 </div>
               </div>
@@ -43,17 +43,17 @@
                 <div class="item">
                   <div class="label">战力</div>
                   <div class="value">
-                    {{ formatPower(battleInfo.power) }}
+                    {{ formatPower(battleInfo?.power || 0) }}
                   </div>
                 </div>
                 <div class="item">
                   <div class="label">红粹</div>
-                  <div class="value">{{ battleInfo.quenchNum }}</div>
+                  <div class="value">{{ battleInfo?.quenchNum || '0' }}</div>
                 </div>
               </div>
-              <div v-if="club.announcement" class="announcement">
+              <div v-if="battleInfo?.announcement" class="announcement">
                 <div class="label">公告</div>
-                <div class="text">{{ battleInfo.announcement }}</div>
+                <div class="text">{{ battleInfo?.announcement || '暂无公告' }}</div>
               </div>
             </div>
           </n-tab-pane>
@@ -64,13 +64,6 @@
             display-directive="show:lazy"
           >
             <PeachBattleRecords inline />
-          </n-tab-pane>
-          <n-tab-pane
-            name="recordsopponent"
-            tab="蟠桃园对手战绩"
-            display-directive="show:lazy"
-          >
-            <PeachOpponentBattleRecords inline />
           </n-tab-pane>
         </n-tabs>
       </div>
@@ -85,13 +78,13 @@ import { useMessage } from "naive-ui";
 import { Refresh, Copy } from "@vicons/ionicons5";
 import { gettoday } from '@/utils/clubWarrankUtils'
 import PeachBattleRecords from "./PeachBattleRecords.vue";
-import PeachOpponentBattleRecords from "./PeachOpponentBattleRecords.vue";
 const tokenStore = useTokenStore();
 const message = useMessage();
 const info = computed(() => tokenStore.gameData?.legionInfo || null);
 const club = computed(() => info.value?.info || null);
 const loading = ref(false);
 const battleInfo = ref(null);
+const activeTab = ref('overview');
 // 格式化战力
 const formatPower = (power) => {
   if (!power) return '0'
