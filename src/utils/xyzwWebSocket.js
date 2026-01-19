@@ -149,8 +149,13 @@ export function registerDefaultCommands(reg) {
     .register("legion_getwarrank")
     .register("legionwar_getdetails")
     .register("legion_storebuygoods")
+    .register("legion_kickout")
+    .register("legion_applylist")
+    .register("legion_approveapply")
+    .register("legion_refuseapply")
+    .register("legion_agree")
+    .register("legion_ignore")
 
-    //盐场
     .register("legion_getinfobyid")
     .register("legion_getarearank")
     .register("saltroad_getsaltroadwartotalrank")
@@ -890,6 +895,10 @@ export class XyzwWebSocketClient {
           1300050: "请修改您的采购次数",
           200020: "出了点小问题，请尝试重启游戏解决～",
           200160: "模块未开启",
+          2300190: "未加入俱乐部",
+          2300370: "俱乐部商品购买数量超出上限",
+          400000: "物品不存在",
+          2300070: "未加入俱乐部",
           3500020: "没有可领取的奖励"
         };
         
@@ -973,12 +982,17 @@ export class XyzwWebSocketClient {
       activity_warorderclaimresp: "activity_recyclewarorderrewardclaim",
       arena_getarearankresp: "arena_getarearank",
       bosstower_gethelprankresp: "bosstower_gethelprank",
+      // 功法相关响应映射
+      legacy_getinforesp: "legacy_getinfo",
+      legacy_claimhangupresp: "legacy_claimhangup",
+      legacy_sendgiftresp: "legacy_sendgift",
+      legacy_getgiftsresp: "legacy_getgifts",
       // 特殊响应映射 - 有些命令有独立响应，有些用同步响应
       task_claimdailyrewardresp: "task_claimdailyreward",
       task_claimweekrewardresp: "task_claimweekreward",
 
       // 同步响应映射（优先级低）
-      syncresp: ["system_mysharecallback", "task_claimdailypoint"],
+      syncresp: ["system_mysharecallback", "task_claimdailypoint", "role_commitpassword"],
       syncrewardresp: [
         "system_buygold",
         "discount_claimreward",
@@ -1026,6 +1040,7 @@ export class XyzwWebSocketClient {
           1300050: "请修改您的采购次数",
           200020: "出了点小问题，请尝试重启游戏解决～",
           200160: "模块未开启",
+          2300190: "未加入俱乐部",
           3500020: "没有可领取的奖励"
         };
         
