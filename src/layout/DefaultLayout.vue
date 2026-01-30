@@ -50,6 +50,12 @@
             </n-icon>
             <span>消息测试</span>
           </router-link>
+          <router-link to="/admin/legion-war" class="nav-item" active-class="active" v-if="isNowInLegionWarTime()">
+            <n-icon>
+              <LockOpen />
+            </n-icon>
+            <span>实时盐场</span>
+          </router-link>
           <router-link to="/admin/profile" class="nav-item" active-class="active">
             <n-icon>
               <Settings />
@@ -67,7 +73,7 @@
               <n-avatar src="" size="medium" fallback-src="/icons/xiaoyugan.png" />
               <span class="username">{{
                 selectedToken?.name || "未选择Token"
-              }}</span>
+                }}</span>
               <n-icon>
                 <ChevronDown />
               </n-icon>
@@ -114,6 +120,12 @@
           </n-icon>
           <span>消息测试</span>
         </router-link>
+        <router-link to="/admin/legion-war" class="nav-item" active-class="active" v-if="isNowInLegionWarTime()">
+          <n-icon>
+            <LockOpen />
+          </n-icon>
+          <span>实时盐场</span>
+        </router-link>
         <router-link to="/admin/profile" class="drawer-item" @click="isMobileMenuOpen = false">
           <n-icon>
             <Settings />
@@ -142,13 +154,15 @@ import {
   Settings,
   ChevronDown,
   ChatbubbleEllipsesSharp,
+  LockClosedSharp, LockOpen,
   Menu,
   Layers,
 } from "@vicons/ionicons5";
 
-import { useRouter } from "vue-router";
-import { useMessage } from "naive-ui";
-import { ref } from "vue";
+import { useRouter } from 'vue-router'
+import { useMessage } from 'naive-ui'
+import { ref } from 'vue'
+import { isNowInLegionWarTime } from '@/utils/clubBattleUtils'
 
 const tokenStore = useTokenStore();
 const router = useRouter();
@@ -342,5 +356,15 @@ const handleUserAction = (key) => {
 .drawer-item.router-link-active {
   background: var(--primary-color-light);
   color: var(--primary-color);
+}
+
+/* 禁用样式：灰化、鼠标禁止、无hover效果 */
+.nav-item.disabled {
+  background: #cccccc;
+  color: #999999;
+  cursor: not-allowed;
+  /* 鼠标样式：禁止 */
+  pointer-events: none;
+  /* 可选：直接禁用所有鼠标事件（比阻止click更彻底） */
 }
 </style>
