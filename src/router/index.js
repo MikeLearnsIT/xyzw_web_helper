@@ -92,6 +92,15 @@ const my_routes = [
         }
       },
       {
+        path: 'batch-tasks',
+        name: 'BatchTasks',
+        component: () => import('@/views/BatchTasks.vue'),
+        meta: {
+          title: '批量任务',
+          requiresToken: true
+        }
+      },
+      {
         path: 'batch-daily-tasks',
         name: 'BatchDailyTasks',
         component: () => import('@/views/BatchDailyTasks.vue'),
@@ -102,7 +111,7 @@ const my_routes = [
       },
       // 增加自动路由引用
       ...generatedRoutes,
-    ]
+    ],
   },
   {
     path: '/websocket-test',
@@ -139,7 +148,7 @@ const my_routes = [
 ]
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes: my_routes,
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) {
