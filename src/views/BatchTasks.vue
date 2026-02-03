@@ -488,7 +488,7 @@ const addLog = (log) => {
   })
 }
 
-const waitForConnection = async (tokenId, timeout = 10000) => {
+const waitForConnection = async (tokenId, timeout = 2000) => {
   const start = Date.now()
   while (Date.now() - start < timeout) {
     const status = tokenStore.getWebSocketStatus(tokenId)
