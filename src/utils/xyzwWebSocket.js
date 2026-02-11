@@ -3,6 +3,7 @@
  * 基于 readable-xyzw-ws.js 重构，适配本项目架构
  */
 
+import { $CacheManager } from "@/stores/cache";
 import { bonProtocol, g_utils } from "./bonProtocol.js";
 import { wsLogger, gameLogger } from "./logger.js";
 
@@ -23,7 +24,7 @@ const errorCodeMap = {
   7500120: "密码输入错误次数已达上限",
   200400: "操作太快，请稍后再试",
   200760: "您当前看到的界面已发生变化，请重新登录",
-  2300190: "未加入俱乐部",
+  2300190: "今天已经签到过了",
   2300370: "俱乐部商品购买数量超出上限",
   400000: "物品不存在",
   1500020: "能量不足",
@@ -36,13 +37,16 @@ const errorCodeMap = {
   3300050: "购买数量超出限制",
   700020: "已经领取过这个任务",
   12400000: "挂机奖励领取过于频繁",
+  2300250: "俱乐部BOSS今日攻打次数已用完",
+  400010: "物品数量不足",
 };
 
-/** 生成 [min,max] 的随机整数 */
-const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-
-/** Promise 版 sleep */
-const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+// 事件节流定义表，根据实际需要调整命令和节流时间
+const CmdDebounceMap = {
+  role_getroleinfo: 1000,
+  system_claimhangupreward: 1000,
+  system_getdatabundlever: 1000,
+};
 
 /** 为日志生成安全的 body 预览，避免控制台再次解析原始对象 */
 const formatBodyForLog = (body) => {
@@ -332,11 +336,9 @@ export function registerDefaultCommands(reg) {
     .register("bosstower_startboss")
     .register("bosstower_startbox")
     .register("discount_getdiscountinfo")
-    
-    //发送游戏内消息
-    .register("system_sendchatmessage")
-    ;
 
+    //发送游戏内消息
+    .register("system_sendchatmessage");
   registry.commands.set(
     "fight_startareaarena",
     (ack = 0, seq = 0, params = {}) => {
@@ -394,6 +396,7 @@ export class XyzwWebSocketClient {
     this.sendQueueTimer = null;
     this.heartbeatTimer = null;
     this.heartbeatInterval = heartbeatMs;
+    this.sendCache = $CacheManager.getCache(this.url, { timeout: 1000 });
 
     this.dialogStatus = false;
     this.messageListener = null;
@@ -595,6 +598,9 @@ export class XyzwWebSocketClient {
       this.connected = false;
       this._clearTimers();
       if (this.onDisconnect) this.onDisconnect(evt);
+      if (this.sendCache) {
+        $CacheManager.delCache(this.url);
+      }
     };
 
     this.socket.onerror = (error) => {
@@ -728,6 +734,29 @@ export class XyzwWebSocketClient {
     }
     this.connected = false;
     this._clearTimers();
+  }
+
+  /** debounceSend */
+  // 在 CmdDebounceMap 中的命令会被节流，
+  // 避免短时间内重复发送同一命令导致服务器压力过大或逻辑错误
+  // 例如 "role_getroleinfo" 这种频繁请求角色信息的命令就适合使用 debounceSend
+  // 他会在第一次请求后缓存结果，在指定的 timeout 时间内如果再次请求同一命令，就直接返回缓存的结果，而不是再次发送请求
+  async debounceSend(cmd, ...args) {
+    if (CmdDebounceMap[cmd]) {
+      gameLogger.info(`Debounce 发送命令排期: ${cmd}`);
+      return this.sendCache.get(
+        cmd,
+        async (c) => {
+          gameLogger.info(`Debounce 发送命令执行: ${c}`);
+          return await this.sendWithPromise(cmd, ...args);
+        },
+        {
+          timeout: CmdDebounceMap[cmd],
+        },
+      );
+    } else {
+      return this.sendWithPromise(cmd, ...args);
+    }
   }
 
   /** 发送消息 */
