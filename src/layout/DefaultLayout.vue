@@ -14,13 +14,21 @@
         </div>
 
         <div class="nav-menu">
-          <router-link to="/admin/dashboard" class="nav-item" active-class="active">
+          <router-link
+            to="/admin/dashboard"
+            class="nav-item"
+            active-class="active"
+          >
             <n-icon>
               <Home />
             </n-icon>
             <span>首页</span>
           </router-link>
-          <router-link to="/admin/game-features" class="nav-item" active-class="active">
+          <router-link
+            to="/admin/game-features"
+            class="nav-item"
+            active-class="active"
+          >
             <n-icon>
               <Cube />
             </n-icon>
@@ -32,35 +40,46 @@
             </n-icon>
             <span>Token管理</span>
           </router-link>
-          <router-link to="/admin/batch-daily-tasks" class="nav-item" active-class="active">
+          <router-link
+            to="/admin/batch-daily-tasks"
+            class="nav-item"
+            active-class="active"
+          >
             <n-icon>
               <Layers />
             </n-icon>
             <span>批量日常</span>
           </router-link>
-          <router-link to="/admin/batch-tasks" class="nav-item" active-class="active">
+          <router-link
+            to="/admin/batch-tasks"
+            class="nav-item"
+            active-class="active"
+          >
             <n-icon>
               <Layers />
             </n-icon>
             <span>批量任务</span>
           </router-link>
-          <router-link to="/admin/message-test" class="nav-item" active-class="active">
+          <router-link
+            to="/admin/message-test"
+            class="nav-item"
+            active-class="active"
+          >
             <n-icon>
               <ChatbubbleEllipsesSharp />
             </n-icon>
             <span>消息测试</span>
           </router-link>
-          <router-link to="/admin/legion-war" class="nav-item" active-class="active" v-if="isNowInLegionWarTime()">
+          <router-link
+            to="/admin/legion-war"
+            class="nav-item"
+            active-class="active"
+            v-if="isNowInLegionWarTime()"
+          >
             <n-icon>
               <LockOpen />
             </n-icon>
             <span>实时盐场</span>
-          </router-link>
-          <router-link to="/admin/profile" class="nav-item" active-class="active">
-            <n-icon>
-              <Settings />
-            </n-icon>
-            <span>个人设置</span>
           </router-link>
         </div>
 
@@ -70,10 +89,14 @@
 
           <n-dropdown :options="userMenuOptions" @select="handleUserAction">
             <div class="user-info">
-              <n-avatar src="" size="medium" fallback-src="/icons/xiaoyugan.png" />
+              <n-avatar
+                :src="selectedToken?.avatar || '/icons/xiaoyugan.png'"
+                size="medium"
+                fallback-src="/icons/xiaoyugan.png"
+              />
               <span class="username">{{
                 selectedToken?.name || "未选择Token"
-                }}</span>
+              }}</span>
               <n-icon>
                 <ChevronDown />
               </n-icon>
@@ -82,51 +105,88 @@
         </div>
       </div>
     </nav>
-    <n-drawer v-model:show="isMobileMenuOpen" placement="left" style="width: 260px">
+    <n-drawer
+      v-model:show="isMobileMenuOpen"
+      placement="left"
+      style="width: 260px"
+    >
       <div class="drawer-menu">
-        <router-link to="/admin/dashboard" class="drawer-item" @click="isMobileMenuOpen = false">
+        <router-link
+          to="/admin/dashboard"
+          class="drawer-item"
+          @click="isMobileMenuOpen = false"
+        >
           <n-icon>
             <Home />
           </n-icon>
           <span>首页</span>
         </router-link>
-        <router-link to="/admin/game-features" class="drawer-item" @click="isMobileMenuOpen = false">
+        <router-link
+          to="/admin/game-features"
+          class="drawer-item"
+          @click="isMobileMenuOpen = false"
+        >
           <n-icon>
             <Cube />
           </n-icon>
           <span>游戏功能</span>
         </router-link>
-        <router-link to="/tokens" class="drawer-item" @click="isMobileMenuOpen = false">
+        <router-link
+          to="/tokens"
+          class="drawer-item"
+          @click="isMobileMenuOpen = false"
+        >
           <n-icon>
             <PersonCircle />
           </n-icon>
           <span>Token管理</span>
         </router-link>
-        <router-link to="/admin/batch-daily-tasks" class="drawer-item" @click="isMobileMenuOpen = false">
+        <router-link
+          to="/admin/batch-daily-tasks"
+          class="drawer-item"
+          @click="isMobileMenuOpen = false"
+        >
           <n-icon>
             <Layers />
           </n-icon>
           <span>批量日常</span>
         </router-link>
-        <router-link to="/admin/batch-tasks" class="drawer-item" @click="isMobileMenuOpen = false">
+        <router-link
+          to="/admin/batch-tasks"
+          class="drawer-item"
+          @click="isMobileMenuOpen = false"
+        >
           <n-icon>
             <Layers />
           </n-icon>
           <span>批量任务</span>
         </router-link>
-        <router-link to="/admin/message-test" class="drawer-item" @click="isMobileMenuOpen = false">
+        <router-link
+          to="/admin/message-test"
+          class="drawer-item"
+          @click="isMobileMenuOpen = false"
+        >
           <n-icon>
             <ChatbubbleEllipsesSharp />
           </n-icon>
           <span>消息测试</span>
         </router-link>
-        <router-link to="/admin/legion-war" class="nav-item" active-class="active" v-if="isNowInLegionWarTime()">
+        <router-link
+          to="/admin/legion-war"
+          class="nav-item"
+          active-class="active"
+          v-if="isNowInLegionWarTime()"
+        >
           <n-icon>
             <LockOpen />
           </n-icon>
           <span>实时盐场</span>
         </router-link>
-        <router-link to="/admin/profile" class="drawer-item" @click="isMobileMenuOpen = false">
+        <router-link
+          to="/admin/profile"
+          class="drawer-item"
+          @click="isMobileMenuOpen = false"
+        >
           <n-icon>
             <Settings />
           </n-icon>
@@ -154,15 +214,16 @@ import {
   Settings,
   ChevronDown,
   ChatbubbleEllipsesSharp,
-  LockClosedSharp, LockOpen,
+  LockClosedSharp,
+  LockOpen,
   Menu,
   Layers,
 } from "@vicons/ionicons5";
 
-import { useRouter } from 'vue-router'
-import { useMessage } from 'naive-ui'
-import { ref } from 'vue'
-import { isNowInLegionWarTime } from '@/utils/clubBattleUtils'
+import { useRouter } from "vue-router";
+import { useMessage } from "naive-ui";
+import { ref } from "vue";
+import { isNowInLegionWarTime } from "@/utils/clubBattleUtils";
 
 const tokenStore = useTokenStore();
 const router = useRouter();
@@ -172,18 +233,7 @@ const isMobileMenuOpen = ref(false);
 
 const userMenuOptions = [
   {
-    label: "个人资料",
-    key: "profile",
-  },
-  {
-    label: "账户设置",
-    key: "settings",
-  },
-  {
-    type: "divider",
-  },
-  {
-    label: "退出登录",
+    label: "清除所有Token并退出",
     key: "logout",
   },
 ];
@@ -191,12 +241,6 @@ const userMenuOptions = [
 // 方法
 const handleUserAction = (key) => {
   switch (key) {
-    case "profile":
-      router.push("/admin/profile");
-      break;
-    case "settings":
-      router.push("/settings");
-      break;
     case "logout":
       tokenStore.clearAllTokens();
       message.success("已清除所有Token");
