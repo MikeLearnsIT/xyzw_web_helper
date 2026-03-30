@@ -144,7 +144,7 @@ export function registerDefaultCommands(reg) {
     .registerHeartbeat()
     // 角色/系统
     .register("role_getroleinfo", {
-      clientVersion: "2.20.1-e249aa927a8ffe4c-wx",
+      clientVersion: "2.21.2-fa918e1997301834-wx",
       inviteUid: 0,
       platform: "hortor",
       platformExt: "mix",
@@ -278,6 +278,11 @@ export function registerDefaultCommands(reg) {
     .register("presetteam_setteam")
     .register("presetteam_saveteam", { teamId: 1 })
     .register("role_gettargetteam")
+    .register("hero_exchange")
+    .register("hero_gointobattle")
+    .register("hero_gobackbattle")
+    .register("artifact_load")
+    .register("artifact_unload")
 
     // 武将升级相关
     .register("hero_heroupgradelevel") //武将升级
@@ -1122,6 +1127,8 @@ export class XyzwWebSocketClient {
         "system_mysharecallback",
         "task_claimdailypoint",
         "role_commitpassword",
+        "hero_gointobattle",
+        "hero_gobackbattle",
       ],
       syncrewardresp: [
         "system_buygold",
@@ -1133,6 +1140,7 @@ export class XyzwWebSocketClient {
         "system_signinreward",
         "dungeon_selecthero",
         "artifact_exchange",
+        "hero_exchange",
       ],
     };
 
@@ -1158,6 +1166,11 @@ export class XyzwWebSocketClient {
             : packet.decodedBody !== undefined
               ? packet.decodedBody
               : packet.body;
+
+        // 附加原始命令名到响应对象
+        if (responseBody && typeof responseBody === "object") {
+          responseBody._originalCmd = promiseData.originalCmd;
+        }
 
         if (packet.code === 0 || packet.code === undefined) {
           promiseData.resolve(responseBody || packet);
