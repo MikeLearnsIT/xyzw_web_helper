@@ -198,6 +198,8 @@ export function registerDefaultCommands(reg) {
     .register("legion_refuseapply")
     .register("legion_agree")
     .register("legion_ignore")
+    .register("legion_research")
+    .register("legion_resetresearch")
 
     .register("legion_getinfobyid")
     .register("legion_getarearank")
@@ -283,10 +285,13 @@ export function registerDefaultCommands(reg) {
     .register("hero_gobackbattle")
     .register("artifact_load")
     .register("artifact_unload")
+    .register("lordweapon_changedefaultweapon")
+    .register("pearl_replaceskill")
 
     // 武将升级相关
     .register("hero_heroupgradelevel") //武将升级
     .register("hero_heroupgradeorder") //武将进阶
+    .register("hero_rebirth") //武将重新birth
 
     // 升星相关
     .register("hero_heroupgradestar")
@@ -1083,6 +1088,9 @@ export class XyzwWebSocketClient {
       league_getgroupopponentresp: "league_getgroupopponent",
       legion_signupresp: "legion_signup",
       legion_payloadsignupresp: "legion_payloadsignup",
+      legion_researchresp: "legion_research",
+      legion_resetresearchresp: "legion_resetresearch",
+      pearl_replaceskillresp: "pearl_replaceskill",
       // 咸王宝库
       matchteam_getroleteaminforesp: "matchteam_getroleteaminfo",
       bosstower_getinforesp: "bosstower_getinfo",
@@ -1091,6 +1099,9 @@ export class XyzwWebSocketClient {
       discount_getdiscountinforesp: "discount_getdiscountinfo",
       // 升星相关响应映射
       hero_heroupgradestarresp: "hero_heroupgradestar",
+      hero_rebirthresp: "hero_rebirth",
+      hero_heroupgradelevelresp: "hero_heroupgradelevel",
+      hero_heroupgradeorderresp: "hero_heroupgradeorder",
       book_upgraderesp: "book_upgrade",
       book_claimpointrewardresp: "book_claimpointreward",
       // 军团信息
@@ -1129,6 +1140,7 @@ export class XyzwWebSocketClient {
         "role_commitpassword",
         "hero_gointobattle",
         "hero_gobackbattle",
+        "lordweapon_changedefaultweapon",
       ],
       syncrewardresp: [
         "system_buygold",
